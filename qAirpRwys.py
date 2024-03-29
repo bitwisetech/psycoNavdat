@@ -107,8 +107,6 @@ def outpRway ( tRow) :
   print( "Iden: %s  HdgT: %3.1f  dLati: %3.5f  dLong: %3.5f  mDisp: %4.1f  mStop: %4.1f" % \
     (tIden, tHdng, dLati, dLong, mDisp, mStop))
 
-
-
 def mill_thresholds():
   """ Retrieve data from database runway table """
   global airpId, magnVari, outpDirp
@@ -162,10 +160,28 @@ def mill_thresholds():
   # full Path must be created beforehand
   #outpPath = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, thisIcao[0], thisIcao[1], thisIcao[2], thisIcao))
   outpPath = ("%s/%s.threshold.xml" % (outpDirp, thisIcao))
-  print(outpPath)
+  #print(outpPath)
   with open(outpPath, "wb") as outpFile:
     xTree.write(outpFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
     outpFile.close()
+    
+def mill_locs() :
+  """ Retrieve data from database localizer table """
+  global airpId, magnVari, outpDirp
+  config   = load_config()
+  xPropl = etree.Element("PropertyList")
+  #
+  with dbConn.cursor() as cur:
+    # query runway table
+    tQuery = "SELECT * FROM cycle2403.localizer \
+              WHERE airport_identifier='%s'" % airpId
+    cur.execute( tQuery)
+    allRows = cur.fetchall()
+  for aRow in allRows :
+    print( aRow)
+    
+
+
 
 ###
 if __name__ == '__main__':
@@ -179,3 +195,4 @@ if __name__ == '__main__':
       print(error)
   get_magnVari()
   mill_thresholds()
+  mill_locs()
