@@ -8,7 +8,7 @@ def normArgs(argv):
   global airpId, magnVari, outpDirp
 # fallback values
   airpId   = 'KAOH'
-  outpDirp = '/comm/fpln/cifp/'
+  outpDirp = '/comm/fpln/cifp/Airports'
   wantHelp = 0
   # get args
   try:
@@ -78,7 +78,7 @@ def get_magnVari() :
         tMagVar *= -1
       magnVari = tMagVar
 
-def outpRow ( tRow) :
+def outpRway ( tRow) :
   global xPropl, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
   tIden = tRow[6]
   mHdng = tRow[9]
@@ -129,7 +129,7 @@ def mill_thresholds():
     if (not( thisId in rwysDone)) :
       print( '<runway>')
       xRway = etree.SubElement(xPropl, "runway")
-      outpRow( aRow)
+      outpRway( aRow)
       rwysDone.append(thisId)
       idLast = thisId[len(thisId)-1]
       if (idLast.isalpha()) :
@@ -154,12 +154,16 @@ def mill_thresholds():
         testId = tRow[6]
         if ( not( rcipId in rwysDone) ):
           if ( testId == rcipId ) :
-            outpRow( tRow)
+            outpRway( tRow)
             rwysDone.append(testId)
       print( '</runway>\n')
   xTree = etree.ElementTree(xPropl)
   #print( etree.tostring( xTree, pretty_print=True ))
-  with open(outpDirp + thisIcao + ".threshold.xml", "wb") as outpFile:
+  # full Path must be created beforehand
+  #outpPath = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, thisIcao[0], thisIcao[1], thisIcao[2], thisIcao))
+  outpPath = ("%s/%s.threshold.xml" % (outpDirp, thisIcao))
+  print(outpPath)
+  with open(outpPath, "wb") as outpFile:
     xTree.write(outpFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
     outpFile.close()
 
@@ -174,4 +178,4 @@ if __name__ == '__main__':
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
   get_magnVari()
-  mill_thresholds
+  mill_thresholds()
