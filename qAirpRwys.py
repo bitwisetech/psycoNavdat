@@ -80,7 +80,7 @@ def get_magnVari( tIcao) :
 def parseRway ( tRow) :
   global Icao, magnVari, outpDirp, locsXmlOpen, thrsElvM
   global xThlds, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
-  tIden = tRow[6]
+  tIden = tRow[6][2: ]
   mHdng = tRow[9]
   tHdng = trueHdng( mHdng)
   tLati = tRow[10]
@@ -94,14 +94,14 @@ def parseRway ( tRow) :
   tStop =       ( tRow[21])
   mStop = ft2Mtr( tRow[21])
   xThrs = etree.SubElement( xRway, "threshold")
+  xLong = etree.SubElement( xThrs, "lon")
+  xLong.text = str( "%3.5f" % dLong )
+  xLati = etree.SubElement( xThrs, "lat")
+  xLati.text = str("%3.5f" % dLati )
   xIden = etree.SubElement( xThrs, "rwy")
   xIden.text = str( tIden )
   xHdng = etree.SubElement( xThrs, "hdg-deg")
   xHdng.text = str("%3.1f" %  tHdng )
-  xLati = etree.SubElement( xThrs, "lat")
-  xLati.text = str("%3.5f" % dLati )
-  xLong = etree.SubElement( xThrs, "lon")
-  xLong.text = str( "%3.5f" % dLong )
   xDisp = etree.SubElement( xThrs, "displ-m")
   xDisp.text = str( "%3.2f" % mDisp )
   xStop = etree.SubElement( xThrs, "stopw-m")
@@ -111,7 +111,7 @@ def parseRway ( tRow) :
     
 def parseLocs ( tRow, xRway) :
   global Icao, magnVari, outpDirp, locsXmlOpen, thrsElvM
-  locsRwy    = tRow[9]
+  locsRwy    = tRow[9][2:]
   locsNvId   = tRow[5]
   locsHdgT   = trueHdng( tRow[12])
   locsLat    = deciLati( tRow[10])
@@ -119,18 +119,18 @@ def parseLocs ( tRow, xRway) :
   locsElev   = thrsElvM
   print ('\n pLocs Rwy:', locsRwy, ' ID:', locsNvId, )
   xIls       = etree.SubElement( xRway, "ils")
+  xLong      = etree.SubElement( xIls, "lon")
+  xLong.text  = str("%3.5f" % locsLon )
+  xLati      = etree.SubElement( xIls, "lat")
+  xLati.text = str("%3.5f" % locsLat )
   xRwy       = etree.SubElement( xIls, "rwy")
   xRwy.text  = str( locsRwy)
   xHdg       = etree.SubElement( xIls, "hdg-deg")
   xHdg.text  = str( "%3.1f" % locsHdgT)
-  xNvId      = etree.SubElement( xIls, "nav-id")
-  xNvId.text = str( locsNvId )
-  xLati      = etree.SubElement( xIls, "lat")
-  xLati.text = str("%3.5f" % locsLat )
-  xLong      = etree.SubElement( xIls, "lon")
-  xLong.text  = str("%3.5f" % locsLon )
   xElev      = etree.SubElement( xIls, "elev-m")
   xElev.text  = str( "%.1f" % locsElev) 
+  xNvId      = etree.SubElement( xIls, "nav-id")
+  xNvId.text = str( locsNvId )
   
 def mill_rwys(tIcao):
   """ Retrieve data from database runway table """
