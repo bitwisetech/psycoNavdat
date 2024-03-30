@@ -223,16 +223,18 @@ def mill_rwys(tIcao):
   thldTree = etree.ElementTree(xThlds)
   #print( etree.tostring( thldTree, pretty_print=True ))
   # full Path must be created beforehand
-  #thrsXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
-  thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, rwayIcao))
+  #
+  thrsXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+  #thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, rwayIcao))
   #print(thrsXmlFid)
   with open(thldXmlFid, "wb") as thldFile:
     thldTree.write(thldFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
     thldFile.close()
   ##
   if ( locsPropOpen > 0 ) :  
-    #locsXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
-    locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, rwayIcao))
+    #
+    locsXmlFid = ("%s/%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+    #locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, rwayIcao))
     locsTree = etree.ElementTree(locsProp)
     with open(locsXmlFid, "wb") as locsFile:
       locsTree.write(locsFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
