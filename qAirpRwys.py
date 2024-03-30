@@ -130,7 +130,7 @@ def parseLocs ( tRow, xRway) :
   xLong      = etree.SubElement( xIls, "lon")
   xLong.text  = str("%3.5f" % locsLon )
   xElev      = etree.SubElement( xIls, "elev-m")
-  xElev.text  = str( "%5.1f" % locsElev) 
+  xElev.text  = str( "%.1f" % locsElev) 
   
 def mill_rwys(tIcao):
   """ Retrieve data from database runway table """
