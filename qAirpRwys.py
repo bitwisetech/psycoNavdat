@@ -5,15 +5,16 @@ from lxml import etree
 
 
 def normArgs(argv):
-  global Icao, magnVari, outpDirp, locsXmlOpen
+  global Icao, magnVari, outpDirp, listPFid, locsXmlOpen
 # fallback values
   Icao   = 'KAOH'
   outpDirp = '/comm/fpln/cifp/Airports'
+  listPFid = '/comm/fpln/cifp/Airports/navErrs.txt'
   wantHelp = 0
   # get args
   try:
-    opts, args = getopt.getopt(argv, "a:d:", \
-      ["airfId=", "outpDirp"] )
+    opts, args = getopt.getopt(argv, "a:d:l:", \
+      ["airfId=", "listPFid", "outpDirp"] )
   except getopt.GetoptError:
      print ('sorry, args do not make sense ')
      sys.exit(2)
@@ -142,6 +143,7 @@ def mill_rwys(tIcao):
   config   = load_config()
   xThlds = etree.Element("PropertyList")
   # Pull all Rways for given A/P 
+  rwayIcao = ''
   with dbConn.cursor() as cur:
     # query runway table
     tQuery = "SELECT * FROM cycle2403.runway \
@@ -150,6 +152,7 @@ def mill_rwys(tIcao):
     allRows = cur.fetchall()
   # Each Rway in Icao:   
   for aRow in allRows :
+    rwayIcao = ''
     rwayIcao = aRow[3]
     rwayRWnn   = aRow[6]
     # Every Rwy gets a single entry in threshold.xml
@@ -219,37 +222,52 @@ def mill_rwys(tIcao):
                   parseLocs( lRow, locsRway )
                   locsRwayOpen = 0
                   print( '</runway>')
-  ##   
-  thldTree = etree.ElementTree(xThlds)
-  #print( etree.tostring( thldTree, pretty_print=True ))
-  # full Path must be created beforehand
-  #
-  thldXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
-  #thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, rwayIcao))
-  #print(thrsXmlFid)
-  with open(thldXmlFid, "wb") as thldFile:
-    thldTree.write(thldFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
-    thldFile.close()
-  ##
-  if ( locsPropOpen > 0 ) :  
+  ## Ensure given Icao was found in cifs
+  if ( not (rwayIcao == '' )) :
+    thldTree = etree.ElementTree(xThlds)
+    #print( etree.tostring( thldTree, pretty_print=True ))
+    # full Path must be created beforehand
     #
-    locsXmlFid = ("%s/%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
-    #locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, rwayIcao))
-    locsTree = etree.ElementTree(locsProp)
-    with open(locsXmlFid, "wb") as locsFile:
-      locsTree.write(locsFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
-      locsFile.close()
-    locsPropOpen = 0 
+    if (( len(rwayIcao) == 4)) :
+      thldXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+    else:  
+      thldXmlFid = ("%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],              rwayIcao))
+    #thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, rwayIcao))
+    #print(thrsXmlFid)
+    with open(thldXmlFid, "wb") as thldFile:
+      thldTree.write(thldFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
+      thldFile.close()
+    ##
+    if ( locsPropOpen > 0 ) :  
+      if (( len(rwayIcao) == 4)) :
+        locsXmlFid = ("%s/%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+      else :   
+        locsXmlFid = ("%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],              rwayIcao))
+      #locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, rwayIcao))
+      locsTree = etree.ElementTree(locsProp)
+      with open(locsXmlFid, "wb") as locsFile:
+        locsTree.write(locsFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
+        locsFile.close()
+      locsPropOpen = 0 
 
 ###
 if __name__ == '__main__':
   normArgs(sys.argv[1:])
   magnVari = 15.00
-
   config  = load_config()
   try:
     dbConn = psycopg2.connect(**config)
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
-  get_magnVari(Icao)
-  mill_rwys(Icao)
+  with open(listPFid, 'r') as listFile:
+    for listLine in listFile:
+      if ( '/runway:' in listLine ) :
+        linePosn  = listLine.find ('/runway:')
+        restLine  = listLine[ (linePosn + 8):]
+        spacePosn = restLine.find( ' ')
+        findIcao  = restLine[0:spacePosn]
+        #        print (findIcao)
+        #
+        get_magnVari(findIcao)
+        #
+        mill_rwys(findIcao)

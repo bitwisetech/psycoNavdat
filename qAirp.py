@@ -28,8 +28,9 @@ def get_locs():
   try:
     with psycopg2.connect(**config) as conn:
       with conn.cursor() as cur:
+        #cur.execute("SELECT airport_identifier FROM cycle2403.localizer ")
         cur.execute("""
-          SELECT * FROM cycle2403.runway
+          SELECT * FROM cycle2403.airport
           WHERE  airport_identifier=""" + "'" + airpId + "'"
         )
         print("rowcount: ", cur.rowcount)
