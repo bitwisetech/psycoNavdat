@@ -224,7 +224,7 @@ def mill_rwys(tIcao):
   #print( etree.tostring( thldTree, pretty_print=True ))
   # full Path must be created beforehand
   #
-  thrsXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+  thldXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
   #thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, rwayIcao))
   #print(thrsXmlFid)
   with open(thldXmlFid, "wb") as thldFile:
