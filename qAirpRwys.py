@@ -5,9 +5,9 @@ from lxml import etree
 
 
 def normArgs(argv):
-  global airpId, magnVari, outpDirp
+  global Icao, magnVari, outpDirp, locsXmlOpen
 # fallback values
-  airpId   = 'KAOH'
+  Icao   = 'KAOH'
   outpDirp = '/comm/fpln/cifp/Airports'
   wantHelp = 0
   # get args
@@ -20,10 +20,9 @@ def normArgs(argv):
   #
   for opt, arg in opts:
     if   opt in ("-a", "--airpId"):
-      airpId  = arg
+      Icao  = arg
     if   opt in ("-d", "--outpDirp"):
       outpDirp  = arg
-  #
 #
 
 def deciLati( tStr):
@@ -62,12 +61,12 @@ def trueHdng( tStr):
       tHdng -= magnVari
   return(tHdng)
 
-def get_magnVari() :
-  global magnVari
+def get_magnVari( tIcao) :
+  global Icao, magnVari, outpDirp, locsXmlOpen
   with dbConn.cursor() as cur:
     # query airport table for Mag Variation
     tQuery = "SELECT * FROM cycle2403.airport \
-              WHERE airport_identifier='%s'" % airpId
+              WHERE airport_identifier='%s'" % tIcao
     cur.execute( tQuery)
     row = cur.fetchone()
     if ( cur.rowcount != 1 ) :
@@ -78,8 +77,9 @@ def get_magnVari() :
         tMagVar *= -1
       magnVari = tMagVar
 
-def outpRway ( tRow) :
-  global xPropl, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
+def parseRway ( tRow) :
+  global Icao, magnVari, outpDirp, locsXmlOpen, thrsElvM
+  global xThlds, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
   tIden = tRow[6]
   mHdng = tRow[9]
   tHdng = trueHdng( mHdng)
@@ -87,6 +87,8 @@ def outpRway ( tRow) :
   dLati = deciLati( tLati)
   tLong = tRow[11]
   dLong = deciLong( tLong)
+  mElev = ft2Mtr( tRow[14])
+  thrsElvM = mElev
   tDisp =       ( tRow[15])
   mDisp = ft2Mtr( tRow[15])
   tStop =       ( tRow[21])
@@ -95,7 +97,7 @@ def outpRway ( tRow) :
   xIden = etree.SubElement( xThrs, "rwy")
   xIden.text = str( tIden )
   xHdng = etree.SubElement( xThrs, "hdg-deg")
-  xHdng.text = str( tHdng )
+  xHdng.text = str("%3.1f" %  tHdng )
   xLati = etree.SubElement( xThrs, "lat")
   xLati.text = str("%3.5f" % dLati )
   xLong = etree.SubElement( xThrs, "lon")
@@ -106,43 +108,89 @@ def outpRway ( tRow) :
   xStop.text = str( "%3.2f" % mStop )
   print( "Iden: %s  HdgT: %3.1f  dLati: %3.5f  dLong: %3.5f  mDisp: %4.1f  mStop: %4.1f" % \
     (tIden, tHdng, dLati, dLong, mDisp, mStop))
-
-def mill_thresholds():
+    
+def parseLocs ( tRow, xRway) :
+  global Icao, magnVari, outpDirp, locsXmlOpen, thrsElvM
+  locsRwy    = tRow[9]
+  locsNvId   = tRow[5]
+  locsHdgT   = trueHdng( tRow[12])
+  locsLat    = deciLati( tRow[10])
+  locsLon    = deciLong( tRow[11])
+  locsElev   = thrsElvM
+  print ('locsLon: ', locsLon, ' locsElev: ', locsElev)
+  xIls       = etree.SubElement( xRway, "ils")
+  xRwy       = etree.SubElement( xIls, "rwy")
+  xRwy.text  = str( locsRwy)
+  xHdg       = etree.SubElement( xIls, "hdg-deg")
+  xHdg.text  = str( "%3.1f" % locsHdgT)
+  xNvId      = etree.SubElement( xIls, "nav-id")
+  xNvId.text = str( locsNvId )
+  xLati      = etree.SubElement( xIls, "lat")
+  xLati.text = str("%3.5f" % locsLat )
+  xLong      = etree.SubElement( xIls, "lon")
+  xLong.text  = str("%3.5f" % locsLon )
+  xElev      = etree.SubElement( xIls, "elev-m")
+  xElev.text  = str( "%5.1f" % locsElev) 
+  
+def mill_rwys(tIcao):
   """ Retrieve data from database runway table """
-  global airpId, magnVari, outpDirp
-  global xPropl, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
+  global magnVari, outpDirp, locsXmlOpen
+  global xThlds, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
   rwysDone = []
+  locsPropOpen = 0
+  locsRwayOpen = 0
   config   = load_config()
-  xPropl = etree.Element("PropertyList")
+  xThlds = etree.Element("PropertyList")
   #
   with dbConn.cursor() as cur:
     # query runway table
     tQuery = "SELECT * FROM cycle2403.runway \
-              WHERE airport_identifier='%s'" % airpId
+              WHERE airport_identifier='%s'" % tIcao
     cur.execute( tQuery)
     allRows = cur.fetchall()
   for aRow in allRows :
     thisIcao = aRow[3]
-    thisId   = aRow[6]
-    if (not( thisId in rwysDone)) :
-      print( '<runway>')
-      xRway = etree.SubElement(xPropl, "runway")
-      outpRway( aRow)
-      rwysDone.append(thisId)
-      idLast = thisId[len(thisId)-1]
+    thrsRW   = aRow[6]
+    # Every Rwy gets a single entry in threshold.xml
+    if (not( thrsRW in rwysDone)) :
+      print( '\n<runway>')
+      xRway = etree.SubElement(xThlds, "runway")
+      parseRway( aRow)
+      rwysDone.append(thrsRW)
+      with dbConn.cursor() as cur:
+        # query localizer table for ILS
+        lQuery = "SELECT * FROM cycle2403.localizer \
+                  WHERE airport_identifier='%s'" % tIcao
+        cur.execute( lQuery)
+        locsRows = cur.fetchall()
+        if ( cur.rowcount > 0) :
+          for lRow in locsRows :
+            if ( lRow[9] == thrsRW ) :
+              if ( locsPropOpen < 1 ) :
+                locsProp = etree.Element("PropertyList")
+                locsPropOpen = 1
+              if ( locsRwayOpen < 1 ) :
+                locsRway = etree.SubElement(locsProp, "runway")
+                locsRwayOpen = 1
+              parseLocs( lRow, locsRway)
+      # After parsing Prop and Rway are left defined in case of recip ILS      
+      # Look for reciprocal to put within the same Rwy
+      idLast = thrsRW[len(thrsRW)-1]
       if (idLast.isalpha()) :
-        idNumb = int(thisId[2:len(thisId)-1])
+        idNumb = int(thrsRW[2:len(thrsRW)-1])
         idChar = idLast
       else :
-        idNumb = int(thisId[2:])
+        idNumb = int(thrsRW[2:])
         idChar = ''
       if (idNumb > 18 ) :
         rcipNumb = idNumb - 18
       else:
         rcipNumb = idNumb + 18
       rcipChar = ''
-      if (idChar == 'L') :
-        rcipChar = 'R'
+      if (idChar == 'C') :
+        rcipChar = 'C'
+      if (idChar == 'R') :
+        rcipChar = 'L'
       if (idChar == 'R') :
         rcipChar = 'L'
       rcipId = ( "RW%02i%s" % (rcipNumb, rcipChar))
@@ -152,47 +200,50 @@ def mill_thresholds():
         testId = tRow[6]
         if ( not( rcipId in rwysDone) ):
           if ( testId == rcipId ) :
-            outpRway( tRow)
+            parseRway( tRow)
             rwysDone.append(testId)
-      print( '</runway>\n')
-  xTree = etree.ElementTree(xPropl)
-  #print( etree.tostring( xTree, pretty_print=True ))
+            # e.g KBOS 09/27 Only Rcip Rwy has ILS, so maybe open ils.xml 
+            if ( cur.rowcount > 0) :
+              for lRow in locsRows :
+                if ( lRow[9] == thrsRW ) :
+                  if ( locsPropOpen < 1 ) :
+                    locsProp = etree.Element("PropertyList")
+                    locsPropOpen = 1
+                  if ( locsRwayOpen < 1 ) :
+                    locsRway = etree.SubElement(locsProp, "runway")
+                    locsRwayOpen = 1
+                  parseLocs( lRow, locsRway)
+          locsRwy = 0 
+          print( '</runway>')
+  ##   
+  thldTree = etree.ElementTree(xThlds)
+  #print( etree.tostring( thldTree, pretty_print=True ))
   # full Path must be created beforehand
-  #outpPath = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, thisIcao[0], thisIcao[1], thisIcao[2], thisIcao))
-  outpPath = ("%s/%s.threshold.xml" % (outpDirp, thisIcao))
-  #print(outpPath)
-  with open(outpPath, "wb") as outpFile:
-    xTree.write(outpFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
-    outpFile.close()
-    
-def mill_locs() :
-  """ Retrieve data from database localizer table """
-  global airpId, magnVari, outpDirp
-  config   = load_config()
-  xPropl = etree.Element("PropertyList")
-  #
-  with dbConn.cursor() as cur:
-    # query runway table
-    tQuery = "SELECT * FROM cycle2403.localizer \
-              WHERE airport_identifier='%s'" % airpId
-    cur.execute( tQuery)
-    allRows = cur.fetchall()
-  for aRow in allRows :
-    print( aRow)
-    
-
-
+  #thrsXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, thisIcao[0], thisIcao[1], thisIcao[2], thisIcao))
+  thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, thisIcao))
+  #print(thrsXmlFid)
+  with open(thldXmlFid, "wb") as thldFile:
+    thldTree.write(thldFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
+    thldFile.close()
+  ##
+  if ( locsPropOpen > 0 ) :  
+    #locsXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, thisIcao[0], thisIcao[1], thisIcao[2], thisIcao))
+    locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, thisIcao))
+    locsTree = etree.ElementTree(locsProp)
+    with open(locsXmlFid, "wb") as locsFile:
+      locsTree.write(locsFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
+      locsFile.close()
+    locsPropOpen = 0 
 
 ###
 if __name__ == '__main__':
-  global magnVari
   normArgs(sys.argv[1:])
   magnVari = 15.00
+
   config  = load_config()
   try:
     dbConn = psycopg2.connect(**config)
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
-  get_magnVari()
-  mill_thresholds()
-  mill_locs()
+  get_magnVari(Icao)
+  mill_rwys(Icao)
