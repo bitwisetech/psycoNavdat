@@ -117,7 +117,7 @@ def parseLocs ( tRow, xRway) :
   locsLat    = deciLati( tRow[10])
   locsLon    = deciLong( tRow[11])
   locsElev   = thrsElvM
-  print ('locsLon: ', locsLon, ' locsElev: ', locsElev)
+  print ('\n pLocs Rwy:', locsRwy, ' ID:', locsNvId, )
   xIls       = etree.SubElement( xRway, "ils")
   xRwy       = etree.SubElement( xIls, "rwy")
   xRwy.text  = str( locsRwy)
@@ -141,22 +141,23 @@ def mill_rwys(tIcao):
   locsRwayOpen = 0
   config   = load_config()
   xThlds = etree.Element("PropertyList")
-  #
+  # Pull all Rways for given A/P 
   with dbConn.cursor() as cur:
     # query runway table
     tQuery = "SELECT * FROM cycle2403.runway \
               WHERE airport_identifier='%s'" % tIcao
     cur.execute( tQuery)
     allRows = cur.fetchall()
+  # Each Rway in Icao:   
   for aRow in allRows :
-    thisIcao = aRow[3]
-    thrsRW   = aRow[6]
+    rwayIcao = aRow[3]
+    rwayRWnn   = aRow[6]
     # Every Rwy gets a single entry in threshold.xml
-    if (not( thrsRW in rwysDone)) :
-      print( '\n<runway>')
+    if (not( rwayRWnn in rwysDone)) :
+      print( '\n', rwayIcao, ' <runway>', rwayRWnn)
       xRway = etree.SubElement(xThlds, "runway")
       parseRway( aRow)
-      rwysDone.append(thrsRW)
+      rwysDone.append(rwayRWnn)
       with dbConn.cursor() as cur:
         # query localizer table for ILS
         lQuery = "SELECT * FROM cycle2403.localizer \
@@ -165,22 +166,22 @@ def mill_rwys(tIcao):
         locsRows = cur.fetchall()
         if ( cur.rowcount > 0) :
           for lRow in locsRows :
-            if ( lRow[9] == thrsRW ) :
+            locsRWnn = lRow[9]
+            if ( locsRWnn == rwayRWnn ) :
               if ( locsPropOpen < 1 ) :
                 locsProp = etree.Element("PropertyList")
                 locsPropOpen = 1
-              if ( locsRwayOpen < 1 ) :
-                locsRway = etree.SubElement(locsProp, "runway")
-                locsRwayOpen = 1
+              locsRway = etree.SubElement(locsProp, "runway")
+              locsRwayOpen = 1
               parseLocs( lRow, locsRway)
       # After parsing Prop and Rway are left defined in case of recip ILS      
       # Look for reciprocal to put within the same Rwy
-      idLast = thrsRW[len(thrsRW)-1]
+      idLast = rwayRWnn[len(rwayRWnn)-1]
       if (idLast.isalpha()) :
-        idNumb = int(thrsRW[2:len(thrsRW)-1])
+        idNumb = int(rwayRWnn[2:len(rwayRWnn)-1])
         idChar = idLast
       else :
-        idNumb = int(thrsRW[2:])
+        idNumb = int(rwayRWnn[2:])
         idChar = ''
       if (idNumb > 18 ) :
         rcipNumb = idNumb - 18
@@ -193,41 +194,45 @@ def mill_rwys(tIcao):
         rcipChar = 'L'
       if (idChar == 'R') :
         rcipChar = 'L'
-      rcipId = ( "RW%02i%s" % (rcipNumb, rcipChar))
+      rcipRWnn = ( "RW%02i%s" % (rcipNumb, rcipChar))
       # Find rcip rwy in list
       for tRow in allRows :
-        # strip 'RW', add to rwysDone
         testId = tRow[6]
-        if ( not( rcipId in rwysDone) ):
-          if ( testId == rcipId ) :
+        if ( not( rcipRWnn in rwysDone) ):
+          if ( testId == rcipRWnn ) :
             parseRway( tRow)
             rwysDone.append(testId)
             # e.g KBOS 09/27 Only Rcip Rwy has ILS, so maybe open ils.xml 
             if ( cur.rowcount > 0) :
               for lRow in locsRows :
-                if ( lRow[9] == thrsRW ) :
+                locsRWnn = lRow[9]
+                if ( locsRWnn == rcipRWnn ) :
                   if ( locsPropOpen < 1 ) :
                     locsProp = etree.Element("PropertyList")
                     locsPropOpen = 1
                   if ( locsRwayOpen < 1 ) :
                     locsRway = etree.SubElement(locsProp, "runway")
-                    locsRwayOpen = 1
-                  parseLocs( lRow, locsRway)
-          locsRwy = 0 
+                    print( '\nNew  <runway>')
+                    locsRwayOpen =1 
+                  else :  
+                    print( '\nOpen <runway>')
+                  parseLocs( lRow, locsRway )
+                  locsRwayOpen = 0
+                  print( '</runway>')
   ##   
   thldTree = etree.ElementTree(xThlds)
   #print( etree.tostring( thldTree, pretty_print=True ))
   # full Path must be created beforehand
-  #thrsXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, thisIcao[0], thisIcao[1], thisIcao[2], thisIcao))
-  thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, thisIcao))
+  #thrsXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+  thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, rwayIcao))
   #print(thrsXmlFid)
   with open(thldXmlFid, "wb") as thldFile:
     thldTree.write(thldFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
     thldFile.close()
   ##
   if ( locsPropOpen > 0 ) :  
-    #locsXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, thisIcao[0], thisIcao[1], thisIcao[2], thisIcao))
-    locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, thisIcao))
+    #locsXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+    locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, rwayIcao))
     locsTree = etree.ElementTree(locsProp)
     with open(locsXmlFid, "wb") as locsFile:
       locsTree.write(locsFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
