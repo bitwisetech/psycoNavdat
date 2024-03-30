@@ -190,8 +190,8 @@ def mill_rwys(tIcao):
       rcipChar = ''
       if (idChar == 'C') :
         rcipChar = 'C'
-      if (idChar == 'R') :
-        rcipChar = 'L'
+      if (idChar == 'L') :
+        rcipChar = 'R'
       if (idChar == 'R') :
         rcipChar = 'L'
       rcipRWnn = ( "RW%02i%s" % (rcipNumb, rcipChar))
