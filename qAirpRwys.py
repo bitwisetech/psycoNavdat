@@ -214,7 +214,6 @@ def mill_rwys(tIcao):
                     locsRwayOpen = 1
                   parseLocs( lRow, locsRway)
           locsRwy = 0 
-          print( '</runway>')
   ##   
   thldTree = etree.ElementTree(xThlds)
   #print( etree.tostring( thldTree, pretty_print=True ))
