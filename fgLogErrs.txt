@@ -1,0 +1,56 @@
+    6.08 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:F45 08R GS
+    6.08 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:14911: couldn't find matching runway for ILS/LOC/GS navaid 'F45 08R GS', ignoring it.
+    6.08 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KAOH 27 GS
+    6.08 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15046: couldn't find matching runway for ILS/LOC/GS navaid 'KAOH 27 GS', ignoring it.
+    6.08 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KATW 29 GS
+    6.08 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15069: couldn't find matching runway for ILS/LOC/GS navaid 'KATW 29 GS', ignoring it.
+    6.08 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KAYS 18 GS
+    6.08 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15082: couldn't find matching runway for ILS/LOC/GS navaid 'KAYS 18 GS', ignoring it.
+    6.08 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KBEH 27 GS
+    6.08 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15096: couldn't find matching runway for ILS/LOC/GS navaid 'KBEH 27 GS', ignoring it.
+    6.08 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KBTL 23 GS
+    6.08 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15150: couldn't find matching runway for ILS/LOC/GS navaid 'KBTL 23 GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KMOB 14 GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15764: couldn't find matching runway for ILS/LOC/GS navaid 'KMOB 14 GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KMOB 32 GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15765: couldn't find matching runway for ILS/LOC/GS navaid 'KMOB 32 GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KORD 10 GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15863: couldn't find matching runway for ILS/LOC/GS navaid 'KORD 10 GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KORD 14L GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15864: couldn't find matching runway for ILS/LOC/GS navaid 'KORD 14L GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KORD 14R GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15865: couldn't find matching runway for ILS/LOC/GS navaid 'KORD 14R GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KORD 28 GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15870: couldn't find matching runway for ILS/LOC/GS navaid 'KORD 28 GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KORD 32L GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15871: couldn't find matching runway for ILS/LOC/GS navaid 'KORD 32L GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KORD 32R GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15872: couldn't find matching runway for ILS/LOC/GS navaid 'KORD 32R GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KPAM 13L GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15891: couldn't find matching runway for ILS/LOC/GS navaid 'KPAM 13L GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KPAM 31R GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15892: couldn't find matching runway for ILS/LOC/GS navaid 'KPAM 31R GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KPDK 20L GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15898: couldn't find matching runway for ILS/LOC/GS navaid 'KPDK 20L GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KPIE 18L GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15923: couldn't find matching runway for ILS/LOC/GS navaid 'KPIE 18L GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KPIE 36R GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:15924: couldn't find matching runway for ILS/LOC/GS navaid 'KPIE 36R GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KROA 33 GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:16006: couldn't find matching runway for ILS/LOC/GS navaid 'KROA 33 GS', ignoring it.
+    6.09 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KSBM 21 GS
+    6.09 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:16032: couldn't find matching runway for ILS/LOC/GS navaid 'KSBM 21 GS', ignoring it.
+    6.10 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KTMA 33 GS
+    6.10 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:394: /fgfs/fgdata/Navaids/nav.dat.gz:16149: couldn't find matching runway for ILS/LOC/GS navaid 'KTMA 33 GS', ignoring it.
+    6.10 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KVDI 24 GS
+    6.29 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KENW 06L OM
+    6.29 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:326: /fgfs/fgdata/Navaids/nav.dat.gz:18012: couldn't find matching runway for marker 'KENW 06L OM', skipping.
+    6.29 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KFPR 09 OM
+    6.29 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:326: /fgfs/fgdata/Navaids/nav.dat.gz:18044: couldn't find matching runway for marker 'KFPR 09 OM', skipping.
+    6.29 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KFXE 08 OM
+    6.29 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:326: /fgfs/fgdata/Navaids/nav.dat.gz:18056: couldn't find matching runway for marker 'KFXE 08 OM', skipping.
+    6.29 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KJXN 24 OM
+    6.29 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:326: /fgfs/fgdata/Navaids/nav.dat.gz:18179: couldn't find matching runway for marker 'KJXN 24 OM', skipping.
+    6.29 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KLBE 23 OM
+    6.29 [INFO]:navaid    /fgfs/flightgear/src/Navaids/navdb.cxx:326: /fgfs/fgdata/Navaids/nav.dat.gz:18191: couldn't find matching runway for marker 'KLBE 23 OM', skipping.
+    6.29 [WARN]:navaid    /fgfs/flightgear/src/Navaids/NavDataCache.cxx:2660: findAirportRunway: unknown airport/runway:KMHE 30 OM

@@ -292,7 +292,7 @@ if __name__ == '__main__':
     print("  ref:  https://pypi.org/project/psycopg2/  ")
     print("    ( For Fedora39 the binary -bin package was used   ")
     print("                                                                    ")
-    print("  Copy this script into psycopg2/env folder and execute from there  ")
+    print("  Copy these scripts into psycopg2/env folder and execute from there  ")
     print("  Create a folder: psycopgs/env/Airports as a default output folder ")
     print("                                                                    ")
     print(" %s : Options: " % sys.argv[0] )
@@ -311,6 +311,11 @@ if __name__ == '__main__':
     print("           then delete ./dump leaving an empty tree structure in newTree" )
     print("                                                                    ")
     print("   -v --verbose Outputs console printouts in addition to writing xml ")
+    print("                                                                    ")
+    print("   Python scripts: qAirp.py, qAlft.py, qLocs.py, qRwys.py           ")
+    print("          are for exploring the database, use -a ICAO for console   ")
+    print("          output of single database queries                         ")
+    print("                                                                    ")
 
   else : 
     from config import load_config
