@@ -310,6 +310,8 @@ if __name__ == '__main__':
     print(" %s : Options: " % sys.argv[0] )
     print("   -a --airport [ ICAO for single airport ")
     print("          e.g %s -a KATL" %  mName  )
+    print("   -c --cifsAll Create output for complete CIFS databas: All airports")
+    print("          Caution: will create files for over 6,000 airports; about 27MBy ")
     print("   -h --help    Print this help")
     print("   -m --multiPass Create multiple entries from spec file ")
     print("          use default specList.txt or -s to specify ")
