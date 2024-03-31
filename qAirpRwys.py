@@ -3,20 +3,21 @@ import psycopg2, getopt, sys
 
 def normArgs(argv):
   global Icao, magnVari, locsXmlOpen
-  global fldrTree, outpDirp, specPFid, multiPass, wantHelp, verbose
+  global cifsAll, fldrTree, multiPass, outpDirp, specPFid, verbose, wantHelp
 # fallback values
   Icao      = 'KATL'
   magnVari  =  6.00
-  outpDirp  = './Airports'
+  outpDirp  = '/data/Airports'
   specPFid  = './listIcao.txt'
-  wantHelp  = 0
-  multiPass = 0
+  cifsAll   = 0
   fldrTree  = 0
+  multiPass = 0
   verbose   = 0
+  wantHelp  = 0
   # get args
   try:
-    opts, args = getopt.getopt(argv, "a:hmo:s:tv", \
-      ["airfId=", "help", "listFile=", "outpPath=" ] )
+    opts, args = getopt.getopt(argv, "a:chmo:s:tv", \
+      ["airport=", "cifsAll", "help", "multiPass",  "outpPath=" , "specFile=", "--tree", "--verbose" ] )
   except getopt.GetoptError:
      print ('sorry, args do not make sense ')
      sys.exit(2)
@@ -24,6 +25,8 @@ def normArgs(argv):
   for opt, arg in opts:
     if   opt in ('-a', "--airport"):
       Icao  = arg
+    if   opt in ('-c', "--cifsAll"):
+      cifsAll = 1
     if   opt in ('-h', "--help"):
       wantHelp = 1
     if   opt in ('-m', "--multiPass"):
@@ -97,7 +100,10 @@ def parseRway ( tRow) :
   global xThlds, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
   tIden = tRow[6][2: ]
   mHdng = tRow[9]
-  tHdng = trueHdng( mHdng)
+  if (mHdng == '') :
+    tHdng = ''
+  else: 
+    tHdng = trueHdng( mHdng)
   tLati = tRow[10]
   dLati = deciLati( tLati)
   tLong = tRow[11]
@@ -116,7 +122,10 @@ def parseRway ( tRow) :
   xIden = etree.SubElement( xThrs, "rwy")
   xIden.text = str( tIden )
   xHdng = etree.SubElement( xThrs, "hdg-deg")
-  xHdng.text = str("%3.1f" %  tHdng )
+  if (tHdng == '') :
+    xHdng.text = ''
+  else : 
+    xHdng.text = str("%3.1f" %  tHdng )
   xDisp = etree.SubElement( xThrs, "displ-m")
   xDisp.text = str( "%3.2f" % mDisp )
   xStop = etree.SubElement( xThrs, "stopw-m")
@@ -166,82 +175,85 @@ def mill_rwys(tIcao):
               WHERE airport_identifier='%s'" % tIcao
     cur.execute( tQuery)
     allRows = cur.fetchall()
-  # Each Rway in Icao:   
-  for aRow in allRows :
-    rwayIcao = ''
-    rwayIcao = aRow[3]
-    rwayRWnn   = aRow[6]
-    # Every Rwy gets a single entry in threshold.xml
-    if (not( rwayRWnn in rwysDone)) :
-      if ( verbose > 0 ) :
-        print( '\n', rwayIcao, ' <runway>', rwayRWnn)
-      xRway = etree.SubElement(xThlds, "runway")
-      parseRway( aRow)
-      rwysDone.append(rwayRWnn)
-      with dbConn.cursor() as cur:
-        # query localizer table for ILS
-        lQuery = "SELECT * FROM cycle2403.localizer \
-                  WHERE airport_identifier='%s'" % tIcao
-        cur.execute( lQuery)
-        locsRows = cur.fetchall()
-        if ( cur.rowcount > 0) :
-          for lRow in locsRows :
-            locsRWnn = lRow[9]
-            if ( locsRWnn == rwayRWnn ) :
-              if ( locsPropOpen < 1 ) :
-                locsProp = etree.Element("PropertyList")
-                locsPropOpen = 1
-              locsRway = etree.SubElement(locsProp, "runway")
-              locsRwayOpen = 1
-              parseLocs( lRow, locsRway)
-      # After parsing Prop and Rway are left defined in case of recip ILS      
-      # Look for reciprocal to put within the same Rwy
-      idLast = rwayRWnn[len(rwayRWnn)-1]
-      if (idLast.isalpha()) :
-        idNumb = int(rwayRWnn[2:len(rwayRWnn)-1])
-        idChar = idLast
-      else :
-        idNumb = int(rwayRWnn[2:])
-        idChar = ''
-      if (idNumb > 18 ) :
-        rcipNumb = idNumb - 18
-      else:
-        rcipNumb = idNumb + 18
-      rcipChar = ''
-      if (idChar == 'C') :
-        rcipChar = 'C'
-      if (idChar == 'L') :
-        rcipChar = 'R'
-      if (idChar == 'R') :
-        rcipChar = 'L'
-      rcipRWnn = ( "RW%02i%s" % (rcipNumb, rcipChar))
-      # Find rcip rwy in list
-      for tRow in allRows :
-        testId = tRow[6]
-        if ( not( rcipRWnn in rwysDone) ):
-          if ( testId == rcipRWnn ) :
-            parseRway( tRow)
-            rwysDone.append(testId)
-            # e.g KBOS 09/27 Only Rcip Rwy has ILS, so maybe open ils.xml 
-            if ( cur.rowcount > 0) :
-              for lRow in locsRows :
-                locsRWnn = lRow[9]
-                if ( locsRWnn == rcipRWnn ) :
-                  if ( locsPropOpen < 1 ) :
-                    locsProp = etree.Element("PropertyList")
-                    locsPropOpen = 1
-                  if ( locsRwayOpen < 1 ) :
-                    locsRway = etree.SubElement(locsProp, "runway")
-                    if ( verbose > 0 ) :
-                      print( '\nNew  <runway>')
-                    locsRwayOpen =1 
-                  else :  
-                    if ( verbose > 0 ) :
-                      print( '\nOpen <runway>')
-                  parseLocs( lRow, locsRway )
-                  locsRwayOpen = 0
-                  if ( verbose > 0 ) :
-                    print( '</runway>')
+  if ( cur.rowcount > 0 ) :
+    # Each Rway in Icao:   
+    for aRow in allRows :
+      rwayIcao = ''
+      rwayIcao = aRow[3]
+      rwayRWnn   = aRow[6]
+      # Every Rwy gets a single entry in threshold.xml
+      if (not( rwayRWnn in rwysDone)) :
+        if ( verbose > 0 ) :
+          print( '\n', rwayIcao, ' <runway>', rwayRWnn)
+        xRway = etree.SubElement(xThlds, "runway")
+        parseRway( aRow)
+        rwysDone.append(rwayRWnn)
+        with dbConn.cursor() as cur:
+          # query localizer table for ILS
+          lQuery = "SELECT * FROM cycle2403.localizer \
+                    WHERE airport_identifier='%s'" % tIcao
+          cur.execute( lQuery)
+          locsRows = cur.fetchall()
+          if ( cur.rowcount > 0) :
+            for lRow in locsRows :
+              locsRWnn = lRow[9]
+              if ( locsRWnn == rwayRWnn ) :
+                if ( locsPropOpen < 1 ) :
+                  locsProp = etree.Element("PropertyList")
+                  locsPropOpen = 1
+                locsRway = etree.SubElement(locsProp, "runway")
+                locsRwayOpen = 1
+                parseLocs( lRow, locsRway)
+        # After parsing Prop and Rway are left defined in case of recip ILS      
+        # Look for reciprocal to put within the same Rwy
+        #   Discard C/L/R and discard single char NSEW water landings 
+        idLast = rwayRWnn[len(rwayRWnn)-1]
+        if ( (len(rwayRWnn) > 1) and not (rwayRWnn.isalpha())) :
+          if (idLast.isalpha()) :
+            idNumb = int(rwayRWnn[2:len(rwayRWnn)-1])
+            idChar = idLast
+          else :
+            idNumb = int(rwayRWnn[2:])
+            idChar = ''
+          if (idNumb > 18 ) :
+            rcipNumb = idNumb - 18
+          else:
+            rcipNumb = idNumb + 18
+          rcipChar = ''
+          if (idChar == 'C') :
+            rcipChar = 'C'
+          if (idChar == 'L') :
+            rcipChar = 'R'
+          if (idChar == 'R') :
+            rcipChar = 'L'
+          rcipRWnn = ( "RW%02i%s" % (rcipNumb, rcipChar))
+          # Find rcip rwy in list
+          for tRow in allRows :
+            testId = tRow[6]
+            if ( not( rcipRWnn in rwysDone) ):
+              if ( testId == rcipRWnn ) :
+                parseRway( tRow)
+                rwysDone.append(testId)
+                # e.g KBOS 09/27 Only Rcip Rwy has ILS, so maybe open ils.xml 
+                if ( cur.rowcount > 0) :
+                  for lRow in locsRows :
+                    locsRWnn = lRow[9]
+                    if ( locsRWnn == rcipRWnn ) :
+                      if ( locsPropOpen < 1 ) :
+                        locsProp = etree.Element("PropertyList")
+                        locsPropOpen = 1
+                      if ( locsRwayOpen < 1 ) :
+                        locsRway = etree.SubElement(locsProp, "runway")
+                        if ( verbose > 0 ) :
+                          print( '\nNew  <runway>')
+                        locsRwayOpen =1 
+                      else :  
+                        if ( verbose > 0 ) :
+                          print( '\nOpen <runway>')
+                      parseLocs( lRow, locsRway )
+                      locsRwayOpen = 0
+                      if ( verbose > 0 ) :
+                        print( '</runway>')
   ## Ensure given Icao was found in cifs
   if ( not (rwayIcao == '' )) :
     thldTree = etree.ElementTree(xThlds)
@@ -326,24 +338,37 @@ if __name__ == '__main__':
       dbConn = psycopg2.connect(**config)
     except (Exception, psycopg2.DatabaseError) as error:
       print(error)
-    if (multiPass > 0 ) :
-      # Run through spec file for multiple airports    
-      with open(specPFid, 'r') as listFile:
-        for listLine in listFile:
-          ### Using fgLogErrs.txt error logout: 
-          ##if ( '/runway:' in listLine ) :
-            ##linePosn  = listLine.find ('/runway:')
-            ##restLine  = listLine[ (linePosn + 8):]
-            ##spacePosn = restLine.find( ' ')
-            ##listIcao  = restLine[0:spacePosn]
-            ## print (listIcao)
-            ##get_magnVari(listIcao)
-            ##mill_rwys(listIcao)
-          ## Using listIcao.txt : List of plain Icao entries
-          listIcao = listLine.rstrip()  
-          get_magnVari(listIcao)
-          mill_rwys(listIcao)
-    else :
-      # Single query 
-      get_magnVari(Icao)
-      mill_rwys(Icao)
+    if (cifsAll > 0 ) :
+      with dbConn.cursor() as cur:
+        # query runway table
+        tQuery = "SELECT * FROM cycle2403.airport"
+        cur.execute( tQuery)
+        allRows = cur.fetchall()
+      # Each Rway in Icao:   
+      for aRow in allRows :
+        cIcao = aRow[3]
+        print (cIcao)
+        get_magnVari(str(cIcao))
+        mill_rwys(str(cIcao))
+    else: 
+      if (multiPass > 0 ) :
+        # Run through spec file for multiple airports    
+        with open(specPFid, 'r') as listFile:
+          for listLine in listFile:
+            ### Using fgLogErrs.txt error logout: 
+            ##if ( '/runway:' in listLine ) :
+              ##linePosn  = listLine.find ('/runway:')
+              ##restLine  = listLine[ (linePosn + 8):]
+              ##spacePosn = restLine.find( ' ')
+              ##listIcao  = restLine[0:spacePosn]
+              ## print (listIcao)
+              ##get_magnVari(listIcao)
+              ##mill_rwys(listIcao)
+            ## Using listIcao.txt : List of plain Icao entries
+            listIcao = listLine.rstrip()  
+            get_magnVari(listIcao)
+            mill_rwys(listIcao)
+      else :
+        # Single query 
+        get_magnVari(Icao)
+        mill_rwys(Icao)
