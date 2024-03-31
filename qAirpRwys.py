@@ -1,29 +1,41 @@
 #!/usr/bin/env python
 import psycopg2, getopt, sys
-from config import load_config
-from lxml import etree
-
 
 def normArgs(argv):
-  global Icao, magnVari, outpDirp, listPFid, locsXmlOpen
+  global Icao, magnVari, locsXmlOpen
+  global fldrTree, outpDirp, specPFid, multiPass, wantHelp, verbose
 # fallback values
-  Icao   = 'KAOH'
-  outpDirp = '/comm/fpln/cifp/Airports'
-  listPFid = '/comm/fpln/cifp/Airports/navErrs.txt'
-  wantHelp = 0
+  Icao      = 'KATL'
+  magnVari  =  6.00
+  outpDirp  = './Airports'
+  specPFid  = './listIcao.txt'
+  wantHelp  = 0
+  multiPass = 0
+  fldrTree  = 0
+  verbose   = 0
   # get args
   try:
-    opts, args = getopt.getopt(argv, "a:d:l:", \
-      ["airfId=", "listPFid", "outpDirp"] )
+    opts, args = getopt.getopt(argv, "a:hmo:s:tv", \
+      ["airfId=", "help", "listFile=", "outpPath=" ] )
   except getopt.GetoptError:
      print ('sorry, args do not make sense ')
      sys.exit(2)
   #
   for opt, arg in opts:
-    if   opt in ("-a", "--airpId"):
+    if   opt in ('-a', "--airport"):
       Icao  = arg
-    if   opt in ("-d", "--outpDirp"):
+    if   opt in ('-h', "--help"):
+      wantHelp = 1
+    if   opt in ('-m', "--multiPass"):
+      multiPass = 1
+    if   opt in ("-o", "--outpPath"):
       outpDirp  = arg
+    if   opt in ("-s", "--specFile"):
+      specPFid  = arg
+    if   opt in ('-t', "--tree"):
+      fldrTree = 1
+    if   opt in ('-v', "--verbose"):
+      verbose = 1
 #
 
 def deciLati( tStr):
@@ -67,11 +79,13 @@ def get_magnVari( tIcao) :
   with dbConn.cursor() as cur:
     # query airport table for Mag Variation
     tQuery = "SELECT * FROM cycle2403.airport \
-              WHERE airport_identifier='%s'" % tIcao
+              WHERE airport_identifier='%s' " % tIcao
     cur.execute( tQuery)
     row = cur.fetchone()
     if ( cur.rowcount != 1 ) :
-      print("Error, non-singleton Airport count: ", cur.rowcount)
+      print("Info: non-singleton Airport at %s " % tIcao )
+      if ( verbose > 0 ):
+        print('Query: ', tQuery)
     else :
       tMagVar = float(row[14][1:]) / 10.0
       if ( row[14][0] != 'W' ):
@@ -107,7 +121,8 @@ def parseRway ( tRow) :
   xDisp.text = str( "%3.2f" % mDisp )
   xStop = etree.SubElement( xThrs, "stopw-m")
   xStop.text = str( "%3.2f" % mStop )
-  print( "Iden: %s  HdgT: %3.1f  dLati: %3.5f  dLong: %3.5f  mDisp: %4.1f  mStop: %4.1f" % \
+  if ( verbose > 0 ) :
+    print( "Iden: %s  HdgT: %3.1f  dLati: %3.5f  dLong: %3.5f  mDisp: %4.1f  mStop: %4.1f" % \
     (tIden, tHdng, dLati, dLong, mDisp, mStop))
     
 def parseLocs ( tRow, xRway) :
@@ -118,7 +133,8 @@ def parseLocs ( tRow, xRway) :
   locsLat    = deciLati( tRow[10])
   locsLon    = deciLong( tRow[11])
   locsElev   = thrsElvM
-  print ('\n pLocs Rwy:', locsRwy, ' ID:', locsNvId, )
+  if ( verbose > 0 ) :
+    print ('\n pLocs Rwy:', locsRwy, ' ID:', locsNvId, )
   xIls       = etree.SubElement( xRway, "ils")
   xLong      = etree.SubElement( xIls, "lon")
   xLong.text  = str("%3.5f" % locsLon )
@@ -157,7 +173,8 @@ def mill_rwys(tIcao):
     rwayRWnn   = aRow[6]
     # Every Rwy gets a single entry in threshold.xml
     if (not( rwayRWnn in rwysDone)) :
-      print( '\n', rwayIcao, ' <runway>', rwayRWnn)
+      if ( verbose > 0 ) :
+        print( '\n', rwayIcao, ' <runway>', rwayRWnn)
       xRway = etree.SubElement(xThlds, "runway")
       parseRway( aRow)
       rwysDone.append(rwayRWnn)
@@ -215,36 +232,45 @@ def mill_rwys(tIcao):
                     locsPropOpen = 1
                   if ( locsRwayOpen < 1 ) :
                     locsRway = etree.SubElement(locsProp, "runway")
-                    print( '\nNew  <runway>')
+                    if ( verbose > 0 ) :
+                      print( '\nNew  <runway>')
                     locsRwayOpen =1 
                   else :  
-                    print( '\nOpen <runway>')
+                    if ( verbose > 0 ) :
+                      print( '\nOpen <runway>')
                   parseLocs( lRow, locsRway )
                   locsRwayOpen = 0
-                  print( '</runway>')
+                  if ( verbose > 0 ) :
+                    print( '</runway>')
   ## Ensure given Icao was found in cifs
   if ( not (rwayIcao == '' )) :
     thldTree = etree.ElementTree(xThlds)
-    #print( etree.tostring( thldTree, pretty_print=True ))
-    # full Path must be created beforehand
-    #
-    if (( len(rwayIcao) == 4)) :
-      thldXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
-    else:  
-      thldXmlFid = ("%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],              rwayIcao))
-    #thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, rwayIcao))
+    if ( verbose > 0 ) :
+      print( etree.tostring( thldTree, pretty_print=True ))
+    # 
+    if ( fldrTree > 0 ) :
+      if (( len(rwayIcao) == 4)) :
+        thldXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+      else:  
+        thldXmlFid = ("%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],              rwayIcao))
+    else:     
+      thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, rwayIcao))
     #print(thrsXmlFid)
     with open(thldXmlFid, "wb") as thldFile:
       thldTree.write(thldFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
       thldFile.close()
-    ##
+    # 
     if ( locsPropOpen > 0 ) :  
-      if (( len(rwayIcao) == 4)) :
-        locsXmlFid = ("%s/%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
-      else :   
-        locsXmlFid = ("%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],              rwayIcao))
-      #locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, rwayIcao))
+      if ( fldrTree > 0 ) :
+        if (( len(rwayIcao) == 4)) :
+          locsXmlFid = ("%s/%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+        else :   
+          locsXmlFid = ("%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],              rwayIcao))
+      else:    
+        locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, rwayIcao))
       locsTree = etree.ElementTree(locsProp)
+      if ( verbose > 0 ) :
+        print( etree.tostring( locsProp, pretty_print=True ))
       with open(locsXmlFid, "wb") as locsFile:
         locsTree.write(locsFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
         locsFile.close()
@@ -253,21 +279,66 @@ def mill_rwys(tIcao):
 ###
 if __name__ == '__main__':
   normArgs(sys.argv[1:])
-  magnVari = 15.00
-  config  = load_config()
-  try:
-    dbConn = psycopg2.connect(**config)
-  except (Exception, psycopg2.DatabaseError) as error:
+  if (wantHelp > 0 ) :
+    mName = sys.argv[0]
+    print(" \n ")
+    print("    ")
+    print(" %s : Flightgear threshold, ils .xml files from CIFS database" % sys.argv[0] )
+    print("                                                                   ")
+    print("Prerequ: Install PyARINC424 and build the ARINC242 postsegrsql database  ")
+    print("  ref:  https://github.com/robertjkeller/PyARINC424  ")
+    print("                                                                   ")
+    print("         Install and configure psycopg2 Python database adapter  ")
+    print("  ref:  https://pypi.org/project/psycopg2/  ")
+    print("    ( For Fedora39 the binary -bin package was used   ")
+    print("                                                                    ")
+    print("  Copy this script into psycopg2/env folder and execute from there  ")
+    print("  Create a folder: psycopgs/env/Airports as a default output folder ")
+    print("                                                                    ")
+    print(" %s : Options: " % sys.argv[0] )
+    print("   -a --airport [ ICAO for single airport ")
+    print("          e.g %s -a KATL" %  mName  )
+    print("   -h --help    Print this help")
+    print("   -m --multiPass Create multiple entries from spec file ")
+    print("          use default specList.txt or -s to specify ")
+    print("   -o --outpPath [somePath ]  Specify Pathname for output ( no TrailSlash, noFileId ) ")
+    print("          e.g    %s -a KATL -o ~/Airports " %  mName   )
+    print("   -s --specfile [PAth/FileID] List of Airport ICAO names for processing ")
+    print("          INFO: message is output for airport has not a single entry in database ")
+    print("   -t --tree  Use a pre-created folder tree , like terrasync/Airports ")
+    print("          (Hint To create an empty tree: copy terrasync/Airports entirely,  ")
+    print("           and then, with care, use rsync -r --remove-source-files newTree ./dump ")
+    print("           then delete ./dump leaving an empty tree structure in newTree" )
+    print("                                                                    ")
+    print("   -v --verbose Outputs console printouts in addition to writing xml ")
+
+  else : 
+    from config import load_config
+    from lxml import etree
+    # see psycopg2 for creating config file 
+    config  = load_config()
+    try:
+      dbConn = psycopg2.connect(**config)
+    except (Exception, psycopg2.DatabaseError) as error:
       print(error)
-  with open(listPFid, 'r') as listFile:
-    for listLine in listFile:
-      if ( '/runway:' in listLine ) :
-        linePosn  = listLine.find ('/runway:')
-        restLine  = listLine[ (linePosn + 8):]
-        spacePosn = restLine.find( ' ')
-        findIcao  = restLine[0:spacePosn]
-        #        print (findIcao)
-        #
-        get_magnVari(findIcao)
-        #
-        mill_rwys(findIcao)
+    if (multiPass > 0 ) :
+      # Run through spec file for multiple airports    
+      with open(specPFid, 'r') as listFile:
+        for listLine in listFile:
+          ### Using fgLogErrs.txt error logout: 
+          ##if ( '/runway:' in listLine ) :
+            ##linePosn  = listLine.find ('/runway:')
+            ##restLine  = listLine[ (linePosn + 8):]
+            ##spacePosn = restLine.find( ' ')
+            ##listIcao  = restLine[0:spacePosn]
+            ## print (listIcao)
+            ##get_magnVari(listIcao)
+            ##mill_rwys(listIcao)
+          ## Using listIcao.txt : List of plain Icao entries
+          listIcao = listLine.rstrip()  
+          get_magnVari(listIcao)
+          mill_rwys(listIcao)
+    else :
+      # Single query 
+      get_magnVari(Icao)
+      mill_rwys(Icao)
