@@ -30,7 +30,7 @@ def get_locs():
       with conn.cursor() as cur:
         cur.execute("""
           SELECT * FROM cycle2403.runway
-          WHERE  airport_identifier=""" + "'" + airpId + "'"
+          WHERE  airport_identifier=""" + "'" + str(airpId) + "'"
         )
         print("rowcount: ", cur.rowcount)
         row = cur.fetchone()

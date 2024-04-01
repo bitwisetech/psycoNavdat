@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import psycopg2, getopt, sys
+import psycopg2, getopt, os, sys
+
 
 def normArgs(argv):
   global Icao, magnVari, locsXmlOpen
@@ -116,20 +117,20 @@ def parseRway ( tRow) :
   mStop = ft2Mtr( tRow[21])
   xThrs = etree.SubElement( xRway, "threshold")
   xLong = etree.SubElement( xThrs, "lon")
-  xLong.text = str( "%3.5f" % dLong )
+  xLong.text = str( "%3.6f" % dLong )
   xLati = etree.SubElement( xThrs, "lat")
-  xLati.text = str("%3.5f" % dLati )
+  xLati.text = str("%3.6f" % dLati )
   xIden = etree.SubElement( xThrs, "rwy")
   xIden.text = str( tIden )
   xHdng = etree.SubElement( xThrs, "hdg-deg")
   if (tHdng == '') :
     xHdng.text = ''
   else : 
-    xHdng.text = str("%3.1f" %  tHdng )
+    xHdng.text = str("%3.2f" %  tHdng )
   xDisp = etree.SubElement( xThrs, "displ-m")
-  xDisp.text = str( "%3.2f" % mDisp )
+  xDisp.text = str( "%3.1f" % mDisp )
   xStop = etree.SubElement( xThrs, "stopw-m")
-  xStop.text = str( "%3.2f" % mStop )
+  xStop.text = str( "%3.1f" % mStop )
   if ( verbose > 0 ) :
     print( "Iden: %s  HdgT: %3.1f  dLati: %3.5f  dLong: %3.5f  mDisp: %4.1f  mStop: %4.1f" % \
     (tIden, tHdng, dLati, dLong, mDisp, mStop))
@@ -146,15 +147,15 @@ def parseLocs ( tRow, xRway) :
     print ('\n pLocs Rwy:', locsRwy, ' ID:', locsNvId, )
   xIls       = etree.SubElement( xRway, "ils")
   xLong      = etree.SubElement( xIls, "lon")
-  xLong.text  = str("%3.5f" % locsLon )
+  xLong.text  = str("%3.6f" % locsLon )
   xLati      = etree.SubElement( xIls, "lat")
-  xLati.text = str("%3.5f" % locsLat )
+  xLati.text = str("%3.6f" % locsLat )
   xRwy       = etree.SubElement( xIls, "rwy")
   xRwy.text  = str( locsRwy)
   xHdg       = etree.SubElement( xIls, "hdg-deg")
-  xHdg.text  = str( "%3.1f" % locsHdgT)
+  xHdg.text  = str( "%3.2f" % locsHdgT)
   xElev      = etree.SubElement( xIls, "elev-m")
-  xElev.text  = str( "%.1f" % locsElev) 
+  xElev.text  = str( "%.2f" % locsElev) 
   xNvId      = etree.SubElement( xIls, "nav-id")
   xNvId.text = str( locsNvId )
   
@@ -262,9 +263,15 @@ def mill_rwys(tIcao):
     # 
     if ( fldrTree > 0 ) :
       if (( len(rwayIcao) == 4)) :
-        thldXmlFid = ("%s/%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
-      else:  
-        thldXmlFid = ("%s/%s/%s/%s.threshold.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],              rwayIcao))
+        fldrPath   = ("%s/%s/%s/%s" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2] ))
+      if (( len(rwayIcao) == 3)) :
+        fldrPath   = ("%s/%s/%s" % (outpDirp, rwayIcao[0], rwayIcao[1] ))
+      if (( len(rwayIcao) == 2)) :
+        fldrPath   = ("%s/%s" % (outpDirp, rwayIcao[0]))
+      #  
+      if ( not ( os.path.isdir( fldrPath ))) :
+         os.makedirs( fldrPath )
+      thldXmlFid = ("%s/%s.threshold.xml" % (fldrPath, rwayIcao))
     else:     
       thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, rwayIcao))
     #print(thrsXmlFid)
@@ -275,9 +282,9 @@ def mill_rwys(tIcao):
     if ( locsPropOpen > 0 ) :  
       if ( fldrTree > 0 ) :
         if (( len(rwayIcao) == 4)) :
-          locsXmlFid = ("%s/%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+          locsXmlFid = ("%s/%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2],     rwayIcao))
         else :   
-          locsXmlFid = ("%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],              rwayIcao))
+          locsXmlFid = ("%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],                     rwayIcao))
       else:    
         locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, rwayIcao))
       locsTree = etree.ElementTree(locsProp)
@@ -311,7 +318,7 @@ if __name__ == '__main__':
     print("   -a --airport [ ICAO for single airport ")
     print("          e.g %s -a KATL" %  mName  )
     print("   -c --cifsAll Create output for complete CIFS databas: All airports")
-    print("          Caution: will create files for over 6,000 airports; about 27MBy ")
+    print("          Caution: will create subdirs, files for over 6,000 airports; about 27MBy ")
     print("   -h --help    Print this help")
     print("   -m --multiPass Create multiple entries from spec file ")
     print("          use default specList.txt or -s to specify ")
@@ -321,8 +328,9 @@ if __name__ == '__main__':
     print("          INFO: message is output for airport has not a single entry in database ")
     print("   -t --tree  Use a pre-created folder tree , like terrasync/Airports ")
     print("          (Hint To create an empty tree: copy terrasync/Airports entirely,  ")
-    print("           and then, with care, use rsync -r --remove-source-files newTree ./dump ")
-    print("           then delete ./dump leaving an empty tree structure in newTree" )
+    print("            and then, with care, use rsync -r --remove-source-files newTree ./dump ")
+    print("            then delete ./dump leaving an empty tree structure in newTree" )
+    print("          Subfolders will be created as needed under specified output path                                                            ")
     print("                                                                    ")
     print("   -v --verbose Outputs console printouts in addition to writing xml ")
     print("                                                                    ")
