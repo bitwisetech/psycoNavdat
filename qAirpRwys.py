@@ -105,7 +105,7 @@ def get_magnVari( tIcao) :
       magnVari = tMagVar
 
 def parseRway ( tRow) :
-  global Icao, magnVari, outpDirp, locsXmlOpen, thrsElvM
+  global Icao, magnVari, outpDirp, nvdbHndl, locsXmlOpen, thrsElvM
   global xThlds, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
   tIden = tRow[6][2: ]
   mHdng = tRow[9]
@@ -178,11 +178,12 @@ def parseLocs ( tRow, xRway) :
   navdAirp   = tRow[3].rjust( 4, ' ')
   navdRway   = (tRow[9][2:]).ljust( 3, ' ')
   navdDesc   = ( 'ILS-cat-I')
-  navdLine   = ("4 %s %s %s %s %s %s %s %s %s %s" %  \
+  navdLine   = ("4 %s %s %s %s %s %s %s %s %s %s\n" %  \
   (navdLati, navdLong, navdElev, navdFreq, navdRngm, \
   navdHdgT, navdNvId, navdAirp, navdRway, navdDesc ))
   if ( verbose > 0 ) :
     print( navdLine)
+  nvdbHndl.write( navdLine)  
   # If glideslope exists, Lat entry follows Loc Hdng
   if (not ( tRow[13] == '' )) :
     nvGSLati = ( "%-02.8f" % (deciLati(tRow[13]))).rjust(12, ' ') 
@@ -196,12 +197,13 @@ def parseLocs ( tRow, xRway) :
     nvGSAirp = navdAirp 
     nvGSRway = navdRway
     nvGSDesc = 'GS'
-    nvGSLine =  ("6 %s %s %s %s %s %s%s %s %s %s %s" %  \
+    nvGSLine =  ("6 %s %s %s %s %s %s%s %s %s %s %s\n" %  \
     (nvGSLati, nvGSLong, nvGSElev, nvGSFreq, nvGSRngm, \
     nvGSAngl, nvGSBrng, nvGSNvId, nvGSAirp, nvGSRway, nvGSDesc ))
     if ( verbose > 0 ) :
       print( nvGSLine)
-  
+    nvdbHndl.write( nvGSLine)  
+
 def mill_rwys(tIcao):
   """ Retrieve data from database runway table """
   global magnVari, outpDirp, locsXmlOpen
@@ -391,6 +393,8 @@ if __name__ == '__main__':
       dbConn = psycopg2.connect(**config)
     except (Exception, psycopg2.DatabaseError) as error:
       print(error)
+    nvdbPFId = ( outpDirp + '/nav.dat' )  
+    nvdbHndl = open( nvdbPFId, 'a' )
     if (cifsAll > 0 ) :
       with dbConn.cursor() as cur:
         # query runway table
@@ -425,3 +429,5 @@ if __name__ == '__main__':
         # Single query 
         get_magnVari(Icao)
         mill_rwys(Icao)
+    nvdbHndl.close()
+    
