@@ -60,12 +60,20 @@ def deciLong( tStr):
     tDeci *= -1
   return ( tDeci)
 
-def ft2Mtr ( tStr):
+def ft2mtr ( tStr):
   # FF
   if ( tStr == '' ) :
     return( 0)
   else :
     tDeci  = (int(tStr) * 12 * 0.0254)
+    return ( tDeci)
+    
+def mtr2ft ( tStr):
+  # FF
+  if ( tStr == '' ) :
+    return( 0)
+  else :
+    tDeci  = (int(tStr) / ( 12 * 0.0254))
     return ( tDeci)
     
 def trueHdng( tStr):
@@ -109,12 +117,12 @@ def parseRway ( tRow) :
   dLati = deciLati( tLati)
   tLong = tRow[11]
   dLong = deciLong( tLong)
-  mElev = ft2Mtr( tRow[14])
+  mElev = ft2mtr( tRow[14])
   thrsElvM = mElev
   tDisp =       ( tRow[15])
-  mDisp = ft2Mtr( tRow[15])
+  mDisp = ft2mtr( tRow[15])
   tStop =       ( tRow[21])
-  mStop = ft2Mtr( tRow[21])
+  mStop = ft2mtr( tRow[21])
   xThrs = etree.SubElement( xRway, "threshold")
   xLong = etree.SubElement( xThrs, "lon")
   xLong.text = str( "%3.6f" % dLong )
@@ -145,9 +153,10 @@ def parseLocs ( tRow, xRway) :
   locsElev   = thrsElvM
   if ( verbose > 0 ) :
     print ('\n pLocs Rwy:', locsRwy, ' ID:', locsNvId, )
+  # Add fields to passed xml Runway   
   xIls       = etree.SubElement( xRway, "ils")
   xLong      = etree.SubElement( xIls, "lon")
-  xLong.text  = str("%3.6f" % locsLon )
+  xLong.text = str("%3.6f" % locsLon )
   xLati      = etree.SubElement( xIls, "lat")
   xLati.text = str("%3.6f" % locsLat )
   xRwy       = etree.SubElement( xIls, "rwy")
@@ -155,9 +164,43 @@ def parseLocs ( tRow, xRway) :
   xHdg       = etree.SubElement( xIls, "hdg-deg")
   xHdg.text  = str( "%3.2f" % locsHdgT)
   xElev      = etree.SubElement( xIls, "elev-m")
-  xElev.text  = str( "%.2f" % locsElev) 
+  xElev.text = str( "%.2f" % locsElev) 
   xNvId      = etree.SubElement( xIls, "nav-id")
   xNvId.text = str( locsNvId )
+  # Build XP 810 nav.dat record 
+  navdLati   = ( "%-02.8f" % locsLat ).rjust(12, ' ')
+  navdLong   = ( "%-03.8f" % locsLon ).rjust(13, ' ')
+  navdElev   = ( "%6i"  % int(mtr2ft(thrsElvM))).rjust( 6, ' ')
+  navdFreq   = tRow[8].rjust( 5, ' ')
+  navdRngm   = ( ' 18')
+  navdHdgT   = ( "%3.3f" % locsHdgT).rjust( 11, ' ')
+  navdNvId   = locsNvId.rjust( 4, ' ')
+  navdAirp   = tRow[3].rjust( 4, ' ')
+  navdRway   = (tRow[9][2:]).ljust( 3, ' ')
+  navdDesc   = ( 'ILS-cat-I')
+  navdLine   = ("4 %s %s %s %s %s %s %s %s %s %s" %  \
+  (navdLati, navdLong, navdElev, navdFreq, navdRngm, \
+  navdHdgT, navdNvId, navdAirp, navdRway, navdDesc ))
+  if ( verbose > 0 ) :
+    print( navdLine)
+  # If glideslope exists, Lat entry follows Loc Hdng
+  if (not ( tRow[13] == '' )) :
+    nvGSLati = ( "%-02.8f" % (deciLati(tRow[13]))).rjust(12, ' ') 
+    nvGSLong = ( "%-03.8f" % (deciLong(tRow[14]))).rjust(13, ' ')
+    nvGSElev = tRow[21].rjust( 6, ' ')
+    nvGSFreq = navdFreq
+    nvGSRngm = ' 10'
+    nvGSAngl = tRow[19].rjust( 4, ' ')
+    nvGSBrng = ( "%3.3f" % locsHdgT).ljust( 7, ' ')
+    nvGSNvId = navdNvId 
+    nvGSAirp = navdAirp 
+    nvGSRway = navdRway
+    nvGSDesc = 'GS'
+    nvGSLine =  ("6 %s %s %s %s %s %s%s %s %s %s %s" %  \
+    (nvGSLati, nvGSLong, nvGSElev, nvGSFreq, nvGSRngm, \
+    nvGSAngl, nvGSBrng, nvGSNvId, nvGSAirp, nvGSRway, nvGSDesc ))
+    if ( verbose > 0 ) :
+      print( nvGSLine)
   
 def mill_rwys(tIcao):
   """ Retrieve data from database runway table """
@@ -258,8 +301,8 @@ def mill_rwys(tIcao):
   ## Ensure given Icao was found in cifs
   if ( not (rwayIcao == '' )) :
     thldTree = etree.ElementTree(xThlds)
-    if ( verbose > 0 ) :
-      print( etree.tostring( thldTree, pretty_print=True ))
+    #if ( verbose > 0 ) :
+      #print( etree.tostring( thldTree, pretty_print=True ))
     # 
     if ( fldrTree > 0 ) :
       if (( len(rwayIcao) == 4)) :
@@ -288,8 +331,8 @@ def mill_rwys(tIcao):
       else:    
         locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, rwayIcao))
       locsTree = etree.ElementTree(locsProp)
-      if ( verbose > 0 ) :
-        print( etree.tostring( locsProp, pretty_print=True ))
+      #if ( verbose > 0 ) :
+        #print( etree.tostring( locsProp, pretty_print=True ))
       with open(locsXmlFid, "wb") as locsFile:
         locsTree.write(locsFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
         locsFile.close()
@@ -318,7 +361,7 @@ if __name__ == '__main__':
     print("   -a --airport [ ICAO for single airport ")
     print("          e.g %s -a KATL" %  mName  )
     print("   -c --cifsAll Create output for complete CIFS databas: All airports")
-    print("          Caution: will create subdirs, files for over 6,000 airports; about 27MBy ")
+    print("          Caution: will create subdirs, 6,000+ files: 25MBy+ flat file, 50MBy+ tree ")
     print("   -h --help    Print this help")
     print("   -m --multiPass Create multiple entries from spec file ")
     print("          use default specList.txt or -s to specify ")
