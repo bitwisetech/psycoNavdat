@@ -430,10 +430,12 @@ if __name__ == '__main__':
               ##mill_rwys(listIcao)
             ## Using listIcao.txt : List of plain Icao entries
             listIcao = listLine.rstrip()
+            print(listIcao)
             get_magnVari(listIcao)
             mill_rwys(listIcao)
       else :
         # Single query
+        print(Icao)
         get_magnVari(Icao)
         mill_rwys(Icao)
     nvdbHndl.close()
