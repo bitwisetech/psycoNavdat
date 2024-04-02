@@ -67,7 +67,7 @@ def ft2mtr ( tStr):
   else :
     tDeci  = (int(tStr) * 12 * 0.0254)
     return ( tDeci)
-    
+
 def mtr2ft ( tStr):
   # FF
   if ( tStr == '' ) :
@@ -75,7 +75,7 @@ def mtr2ft ( tStr):
   else :
     tDeci  = (int(tStr) / ( 12 * 0.0254))
     return ( tDeci)
-    
+
 def trueHdng( tStr):
   global magnVari
   tHdng = float(tStr[0:4]) / 10.0
@@ -111,7 +111,7 @@ def parseRway ( tRow) :
   mHdng = tRow[9]
   if (mHdng == '') :
     tHdng = ''
-  else: 
+  else:
     tHdng = trueHdng( mHdng)
   tLati = tRow[10]
   dLati = deciLati( tLati)
@@ -133,7 +133,7 @@ def parseRway ( tRow) :
   xHdng = etree.SubElement( xThrs, "hdg-deg")
   if (tHdng == '') :
     xHdng.text = ''
-  else : 
+  else :
     xHdng.text = str("%3.2f" %  tHdng )
   xDisp = etree.SubElement( xThrs, "displ-m")
   xDisp.text = str( "%3.1f" % mDisp )
@@ -142,7 +142,7 @@ def parseRway ( tRow) :
   if ( verbose > 0 ) :
     print( "Iden: %s  HdgT: %3.1f  dLati: %3.5f  dLong: %3.5f  mDisp: %4.1f  mStop: %4.1f" % \
     (tIden, tHdng, dLati, dLong, mDisp, mStop))
-    
+
 def parseLocs ( tRow, xRway) :
   global Icao, magnVari, outpDirp, locsXmlOpen, thrsElvM
   locsRwy    = tRow[9][2:]
@@ -153,7 +153,7 @@ def parseLocs ( tRow, xRway) :
   locsElev   = thrsElvM
   if ( verbose > 0 ) :
     print ('\n pLocs Rwy:', locsRwy, ' ID:', locsNvId, )
-  # Add fields to passed xml Runway   
+  # Add fields to passed xml Runway
   xIls       = etree.SubElement( xRway, "ils")
   xLong      = etree.SubElement( xIls, "lon")
   xLong.text = str("%3.6f" % locsLon )
@@ -164,10 +164,10 @@ def parseLocs ( tRow, xRway) :
   xHdg       = etree.SubElement( xIls, "hdg-deg")
   xHdg.text  = str( "%3.2f" % locsHdgT)
   xElev      = etree.SubElement( xIls, "elev-m")
-  xElev.text = str( "%.2f" % locsElev) 
+  xElev.text = str( "%.2f" % locsElev)
   xNvId      = etree.SubElement( xIls, "nav-id")
   xNvId.text = str( locsNvId )
-  # Build XP 810 nav.dat record 
+  # Build XP 810 nav.dat record
   navdLati   = ( "%-02.8f" % locsLat ).rjust(12, ' ')
   navdLong   = ( "%-03.8f" % locsLon ).rjust(13, ' ')
   navdElev   = ( "%6i"  % int(mtr2ft(thrsElvM))).rjust( 6, ' ')
@@ -183,18 +183,18 @@ def parseLocs ( tRow, xRway) :
   navdHdgT, navdNvId, navdAirp, navdRway, navdDesc ))
   if ( verbose > 0 ) :
     print( navdLine)
-  nvdbHndl.write( navdLine)  
+  nvdbHndl.write( navdLine)
   # If glideslope exists, Lat entry follows Loc Hdng
   if (not ( tRow[13] == '' )) :
-    nvGSLati = ( "%-02.8f" % (deciLati(tRow[13]))).rjust(12, ' ') 
+    nvGSLati = ( "%-02.8f" % (deciLati(tRow[13]))).rjust(12, ' ')
     nvGSLong = ( "%-03.8f" % (deciLong(tRow[14]))).rjust(13, ' ')
     nvGSElev = tRow[21].rjust( 6, ' ')
     nvGSFreq = navdFreq
     nvGSRngm = ' 10'
     nvGSAngl = tRow[19].rjust( 4, ' ')
     nvGSBrng = ( "%3.3f" % locsHdgT).ljust( 7, ' ')
-    nvGSNvId = navdNvId 
-    nvGSAirp = navdAirp 
+    nvGSNvId = navdNvId
+    nvGSAirp = navdAirp
     nvGSRway = navdRway
     nvGSDesc = 'GS'
     nvGSLine =  ("6 %s %s %s %s %s %s%s %s %s %s %s\n" %  \
@@ -202,7 +202,7 @@ def parseLocs ( tRow, xRway) :
     nvGSAngl, nvGSBrng, nvGSNvId, nvGSAirp, nvGSRway, nvGSDesc ))
     if ( verbose > 0 ) :
       print( nvGSLine)
-    nvdbHndl.write( nvGSLine)  
+    nvdbHndl.write( nvGSLine)
 
 def mill_rwys(tIcao):
   """ Retrieve data from database runway table """
@@ -213,7 +213,7 @@ def mill_rwys(tIcao):
   locsRwayOpen = 0
   config   = load_config()
   xThlds = etree.Element("PropertyList")
-  # Pull all Rways for given A/P 
+  # Pull all Rways for given A/P
   rwayIcao = ''
   with dbConn.cursor() as cur:
     # query runway table
@@ -222,7 +222,7 @@ def mill_rwys(tIcao):
     cur.execute( tQuery)
     allRows = cur.fetchall()
   if ( cur.rowcount > 0 ) :
-    # Each Rway in Icao:   
+    # Each Rway in Icao:
     for aRow in allRows :
       rwayIcao = ''
       rwayIcao = aRow[3]
@@ -250,9 +250,9 @@ def mill_rwys(tIcao):
                 locsRway = etree.SubElement(locsProp, "runway")
                 locsRwayOpen = 1
                 parseLocs( lRow, locsRway)
-        # After parsing Prop and Rway are left defined in case of recip ILS      
+        # After parsing: xml  Prop and Rway are left open in case of recip ILS
         # Look for reciprocal to put within the same Rwy
-        #   Discard C/L/R and discard single char NSEW water landings 
+        #   Discard C/L/R and discard single char NSEW water landings
         idLast = rwayRWnn[len(rwayRWnn)-1]
         if ( (len(rwayRWnn) > 1) and not (rwayRWnn.isalpha())) :
           if (idLast.isalpha()) :
@@ -280,7 +280,7 @@ def mill_rwys(tIcao):
               if ( testId == rcipRWnn ) :
                 parseRway( tRow)
                 rwysDone.append(testId)
-                # e.g KBOS 09/27 Only Rcip Rwy has ILS, so maybe open ils.xml 
+                # e.g KBOS 09/27 Only Rcip Rwy has ILS, so maybe open ils.xml
                 if ( cur.rowcount > 0) :
                   for lRow in locsRows :
                     locsRWnn = lRow[9]
@@ -292,20 +292,24 @@ def mill_rwys(tIcao):
                         locsRway = etree.SubElement(locsProp, "runway")
                         if ( verbose > 0 ) :
                           print( '\nNew  <runway>')
-                        locsRwayOpen =1 
-                      else :  
+                        locsRwayOpen =1
+                      else :
                         if ( verbose > 0 ) :
                           print( '\nOpen <runway>')
                       parseLocs( lRow, locsRway )
                       locsRwayOpen = 0
                       if ( verbose > 0 ) :
                         print( '</runway>')
+          # test done for rcip Rwy: close <runway. tag
+          locsRwayOpen = 0
+          if ( verbose > 0 ) :
+            print( '</runway>')
   ## Ensure given Icao was found in cifs
   if ( not (rwayIcao == '' )) :
     thldTree = etree.ElementTree(xThlds)
     #if ( verbose > 0 ) :
       #print( etree.tostring( thldTree, pretty_print=True ))
-    # 
+    #
     if ( fldrTree > 0 ) :
       if (( len(rwayIcao) == 4)) :
         fldrPath   = ("%s/%s/%s/%s" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2] ))
@@ -313,24 +317,24 @@ def mill_rwys(tIcao):
         fldrPath   = ("%s/%s/%s" % (outpDirp, rwayIcao[0], rwayIcao[1] ))
       if (( len(rwayIcao) == 2)) :
         fldrPath   = ("%s/%s" % (outpDirp, rwayIcao[0]))
-      #  
+      #
       if ( not ( os.path.isdir( fldrPath ))) :
          os.makedirs( fldrPath )
       thldXmlFid = ("%s/%s.threshold.xml" % (fldrPath, rwayIcao))
-    else:     
+    else:
       thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, rwayIcao))
     #print(thrsXmlFid)
     with open(thldXmlFid, "wb") as thldFile:
       thldTree.write(thldFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
       thldFile.close()
-    # 
-    if ( locsPropOpen > 0 ) :  
+    #
+    if ( locsPropOpen > 0 ) :
       if ( fldrTree > 0 ) :
         if (( len(rwayIcao) == 4)) :
-          locsXmlFid = ("%s/%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2],     rwayIcao))
-        else :   
-          locsXmlFid = ("%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],                     rwayIcao))
-      else:    
+          locsXmlFid = ("%s/%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+        else :
+          locsXmlFid = ("%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],                 rwayIcao))
+      else:
         locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, rwayIcao))
       locsTree = etree.ElementTree(locsProp)
       #if ( verbose > 0 ) :
@@ -338,7 +342,7 @@ def mill_rwys(tIcao):
       with open(locsXmlFid, "wb") as locsFile:
         locsTree.write(locsFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
         locsFile.close()
-      locsPropOpen = 0 
+      locsPropOpen = 0
 
 ###
 if __name__ == '__main__':
@@ -348,17 +352,17 @@ if __name__ == '__main__':
     print(" \n ")
     print("    ")
     print(" %s : Flightgear threshold, ils .xml files from CIFS database" % sys.argv[0] )
-    print("                                                                   ")
+    print("  ")
     print("Prerequ: Install PyARINC424 and build the ARINC242 postsegrsql database  ")
     print("  ref:  https://github.com/robertjkeller/PyARINC424  ")
-    print("                                                                   ")
+    print("  ")
     print("         Install and configure psycopg2 Python database adapter  ")
     print("  ref:  https://pypi.org/project/psycopg2/  ")
     print("    ( For Fedora39 the binary -bin package was used   ")
-    print("                                                                    ")
+    print("  ")
     print("  Copy these scripts into psycopg2/env folder and execute from there  ")
     print("  Create a folder: psycopgs/env/Airports as a default output folder ")
-    print("                                                                    ")
+    print("  ")
     print(" %s : Options: " % sys.argv[0] )
     print("   -a --airport [ ICAO for single airport ")
     print("          e.g %s -a KATL" %  mName  )
@@ -369,6 +373,7 @@ if __name__ == '__main__':
     print("          use default specList.txt or -s to specify ")
     print("   -o --outpPath [somePath ]  Specify Pathname for output ( no TrailSlash, noFileId ) ")
     print("          e.g    %s -a KATL -o ~/Airports " %  mName   )
+    print("          NavData/nav/addin-nav.dat folder is created alongside this folder                                                          ")
     print("   -s --specfile [PAth/FileID] List of Airport ICAO names for processing ")
     print("          INFO: message is output for airport has not a single entry in database ")
     print("   -t --tree  Use a pre-created folder tree , like terrasync/Airports ")
@@ -376,43 +381,45 @@ if __name__ == '__main__':
     print("            and then, with care, use rsync -r --remove-source-files newTree ./dump ")
     print("            then delete ./dump leaving an empty tree structure in newTree" )
     print("          Subfolders will be created as needed under specified output path                                                            ")
-    print("                                                                    ")
+    print("  ")
     print("   -v --verbose Outputs console printouts in addition to writing xml ")
-    print("                                                                    ")
+    print("  ")
     print("   Python scripts: qAirp.py, qAlft.py, qLocs.py, qRwys.py           ")
     print("          are for exploring the database, use -a ICAO for console   ")
     print("          output of single database queries                         ")
-    print("                                                                    ")
+    print("  ")
 
-  else : 
+  else :
     from config import load_config
     from lxml import etree
-    # see psycopg2 for creating config file 
+    # see psycopg2 for creating config file
     config  = load_config()
     try:
       dbConn = psycopg2.connect(**config)
     except (Exception, psycopg2.DatabaseError) as error:
       print(error)
-    nvdbPFId = ( outpDirp + '/nav.dat' )  
+    # nav.dat needs header and footer; NavData is placed next to Airports folder
+    nvdbPFId = ( outpDirp + '/../NavData/nav/addins-nav.dat' )
     nvdbHndl = open( nvdbPFId, 'a' )
+    #
     if (cifsAll > 0 ) :
       with dbConn.cursor() as cur:
         # query runway table
         tQuery = "SELECT * FROM cycle2403.airport"
         cur.execute( tQuery)
         allRows = cur.fetchall()
-      # Each Rway in Icao:   
+      # Each Rway in Icao
       for aRow in allRows :
         cIcao = aRow[3]
         print (cIcao)
         get_magnVari(str(cIcao))
         mill_rwys(str(cIcao))
-    else: 
+    else:
       if (multiPass > 0 ) :
-        # Run through spec file for multiple airports    
+        # Run through spec file for multiple airports
         with open(specPFid, 'r') as listFile:
           for listLine in listFile:
-            ### Using fgLogErrs.txt error logout: 
+            ### Using fgLogErrs.txt error logout:
             ##if ( '/runway:' in listLine ) :
               ##linePosn  = listLine.find ('/runway:')
               ##restLine  = listLine[ (linePosn + 8):]
@@ -422,12 +429,12 @@ if __name__ == '__main__':
               ##get_magnVari(listIcao)
               ##mill_rwys(listIcao)
             ## Using listIcao.txt : List of plain Icao entries
-            listIcao = listLine.rstrip()  
+            listIcao = listLine.rstrip()
             get_magnVari(listIcao)
             mill_rwys(listIcao)
       else :
-        # Single query 
+        # Single query
         get_magnVari(Icao)
         mill_rwys(Icao)
     nvdbHndl.close()
-    
+### End     
