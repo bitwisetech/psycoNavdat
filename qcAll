@@ -1,0 +1,7 @@
+#!/bin/sh
+echo " "
+echo "nav.dat:"
+aNav $1
+echo " "
+echo "cifs:"
+./qAirp.py -a $1 && ./qRwys.py -a $1 && ./qLocs.py -a $1 
