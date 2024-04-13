@@ -50,7 +50,7 @@ def magnDecl( tStr) :
     tDecl *= -1
   return(tDecl)
   
-def a424ToNavdat ( t424Row, navdatHndl) :
+def aVhfToNavdat ( t424Row, navdatHndl) :
   aSect = t424Row[2]
   aSubs = t424Row[3]
   aClas = t424Row[10]
@@ -60,10 +60,10 @@ def a424ToNavdat ( t424Row, navdatHndl) :
     if not (t424Row[12] == '' ) :
       navdLong = ( "%-03.8f" % (deciLong( t424Row[12]))).rjust(13, ' ')
     navdDecl = ( "%6i"  % magnDecl(t424Row[16])).rjust( 6, ' ')
-    if (t424Row[17] == '') :
-      navdElev = ( "%s"  % (t424Row[17].rjust( 6, ' ')))
-    else :  
-      navdElev = ( "     0")
+    if not (t424Row[17] == '' ) :
+      navdElev = ( "%6i"  % int(t424Row[17])).rjust( 6, ' ')
+    else : 
+      navdElev = '     0'  
     navdFreq = (t424Row[9][0:5]).rjust( 5, ' ')
     navdClas = t424Row[10]
     navdRnge = '  0'
@@ -139,18 +139,59 @@ def a424ToNavdat ( t424Row, navdatHndl) :
           addnHndl.write( navdLine)
   #   
 
+def aNdbToNavdat ( t424Row, navdatHndl) :
+  aSect = t424Row[2]
+  aSubs = t424Row[3]
+  aClas = t424Row[10]
+  if ( (aSect == 'D') and (aSubs == 'B')) :
+    # 'D' 'B' : NDB Navaid
+    navdCode = '2 '
+    nameQual = 'NDB'
+    if not (t424Row[11] == '' ) :
+      navdLati = ( "%-02.8f" % (deciLati( t424Row[11]))).rjust(12, ' ')
+    if not (t424Row[12] == '' ) :
+      navdLong = ( "%-03.8f" % (deciLong( t424Row[12]))).rjust(13, ' ')
+    navdDecl = ( "%6i"  % magnDecl(t424Row[13])).rjust( 6, ' ')
+    navdElev = ( "     0")
+    navdFreq = (t424Row[9][0:5]).rjust( 5, ' ')
+    navdClas = t424Row[10]
+    navdRnge = '  0'
+    if (navdClas[1:3] == 'H') :
+      navdRnge = ' 75'  
+    if (navdClas[2:3] == ' ') :
+      navdRnge = ' 50'
+    if (navdClas[2:3] == 'M') :
+      navdRnge = ' 25'
+    if (navdClas[2:3] == 'L') :
+      navdRnge = ' 15'
+    navdNuse = '   0.0'
+    navdIden = t424Row[6].ljust( 4, ' ')
+    navdName = ("%s %s" % ((t424Row[15].ljust( 4, ' ')), nameQual))
+    navdLine = ("%s %s %s %s %s %s %s %s %s\n" %  \
+    (navdCode, navdLati, navdLong, navdElev, navdFreq, \
+    navdRnge, navdNuse, navdIden, navdName ))
+    if verbose :
+      print( navdLine)
+    if addNavd :  
+      addnHndl.write( navdLine)
+  #   
+
 NDBLine    = ('S', 'USA', 'D', 'B', '', '', 'AAA', 'K5', '0', '03290', 'H MW', 'N40093642', 'W089201686', 'E0000', 'NAR', 'ABRAHAM', '26455', '1703')
 VORLine    = ('S', 'USA', 'D', '', '', '', 'ALI', 'K4', '0', '11450', 'V LW', 'N27442328', 'W098011683', '', '', '', 'E0060', '', '1', '', '', 'NAR', 'ALICE', '24571', '1703')
 VORDMELine = ('S', 'USA', 'D',  '', '', '', 'ABR', 'K3', '0', '11300', 'VDH',  'N45250248', 'W098220739', '',    'N45250248', 'W098220739', 'E0070', '01303', '2', '', '', 'NAR', 'ABERDEEN', '24551', '2110')
 VORTACLine = ('S', 'USA', 'D',  '', '', '', 'ALS', 'K2', '0', '11390', 'VTHW', 'N37205697', 'W105485592', '',    'N37205697', 'W105485592', 'E0130', '07535', '2', '', '', 'NAR', 'ALAMOSA', '24573', '1907')
 TACANLine  = ('S', 'USA', 'D',  '', '', '', 'BAB', 'K2', '0', '10860', ' TLW', '',          '',           'BAB', 'N39080526', 'W121262673', 'E0160', '00089', '1', '', '', 'NAR', 'BEALE', '24597', '2401')  
 DMELine    = ('S', 'CAN', 'D', '', '', '', 'YOW', 'CY', '0', '11460', ' DUW', '', '', 'YOW', 'N45263013', 'W075534896', 'W0140', '00450', '3', '', '', 'NAR', 'OTTAWA', '00306', '2401')
- 
+NDBLine    = ('S', 'USA', 'D', 'B', '', '', 'ADG', 'K5', '0', '02780', 'H MW', 'N41521195', 'W084043893', 'W0060', 'NAR', 'ADRIAN', '26459', '2112')
+NDBLine2   = ('S', 'CAN', 'D', 'B', '', '', 'CRN', 'PA', '0', '02810', 'H  W', 'N61060630', 'W155340713', 'E0150', 'NAR', 'CAIRN MOUNTAIN', '00371', '1713')
+
 verbose = 1
 addNavd = 0
-a424ToNavdat ( NDBLine, '')
-a424ToNavdat ( VORLine, '')
-a424ToNavdat ( VORDMELine, '')
-a424ToNavdat ( VORTACLine, '')
-a424ToNavdat ( TACANLine, '')
-a424ToNavdat ( DMELine, '')
+aVhfToNavdat ( NDBLine, '')
+aVhfToNavdat ( VORLine, '')
+aVhfToNavdat ( VORDMELine, '')
+aVhfToNavdat ( VORTACLine, '')
+aVhfToNavdat ( TACANLine, '')
+aVhfToNavdat ( DMELine, '')
+aNdbToNavdat ( NDBLine, '')
+aNdbToNavdat ( NDBLine2, '')
