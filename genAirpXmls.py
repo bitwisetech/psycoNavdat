@@ -4,7 +4,7 @@ import psycopg2, getopt, os, sys
 
 def normArgs(argv):
   global Icao, magnVari, locsXmlOpen
-  global cifsAll, fldrTree, multiPass, outpDirp, specPFid, verbose, wantHelp
+  global cifsAll, fldrTree, multiPass, outpDirp, specPFid, verbose, showHelp
 # fallback values
   Icao      = 'KATL'
   magnVari  =  6.00
@@ -14,7 +14,7 @@ def normArgs(argv):
   fldrTree  = 0
   multiPass = 0
   verbose   = 0
-  wantHelp  = 0
+  showHelp  = 0
   # get args
   try:
     opts, args = getopt.getopt(argv, "a:chmo:s:tv", \
@@ -29,7 +29,7 @@ def normArgs(argv):
     if   opt in ('-c', "--cifsAll"):
       cifsAll = 1
     if   opt in ('-h', "--help"):
-      wantHelp = 1
+      showHelp = 1
     if   opt in ('-m', "--multiPass"):
       multiPass = 1
     if   opt in ("-o", "--outpPath"):
@@ -347,7 +347,7 @@ def mill_rwys(tIcao):
 ###
 if __name__ == '__main__':
   normArgs(sys.argv[1:])
-  if (wantHelp > 0 ) :
+  if (showHelp > 0 ) :
     mName = sys.argv[0]
     print(" \n ")
     print("    ")

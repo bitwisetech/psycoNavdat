@@ -2,30 +2,40 @@
 import psycopg2, getopt, sys
 from config import load_config
 
+global compAll, verbose, navId, showHelp
+
 # fallback values
 navId     = 'LFV'
 a424ini   = "a424db.ini"
 x810ini   = "x810db.ini"
 a424Schem = 'cycle2403'
 x810Schem = 'cyclexp810'
-verbose   = 0
-wantHelp  = 0
-doAll = 1
-addNavd = 0
+#
+addNavd  = 0
+compAll  = 1
+compType = 'vhf'
+showHelp = 0
+summFlag = 0
+verbose  = 0
+#
 def normArgs(argv) :
-  global doAll, verbose, navId
+  global compAll, compType, verbose, navId, showHelp
   # get args
   try:
-    opts, args = getopt.getopt(argv, "i:v", \
-      ["id=", "verbose" ] )
+    opts, args = getopt.getopt(argv, "hi:t:v", \
+      ["help", "id=", "type=", "verbose" ] )
   except getopt.GetoptError:
      print ('sorry, args do not make sense ')
      sys.exit(2)
   #
   for opt, arg in opts:
+    if   opt in ('-h', "--help"):
+      showHelp = 1
     if   opt in ("-i", "--id"):
       navId  = arg
-      doAll  = 0 
+      compAll  = 0 
+    if   opt in ("-t", "--type"):
+      compType = arg
     if   opt in ("-v", "--verbose"):
       verbose = 1
   #
@@ -314,7 +324,7 @@ def aNdbToNavdat ( t424Row, navdatHndl) :
       navdLong = ( "%-03.8f" % (deciLong( t424Row[12]))).rjust(13, ' ')
     navdDecl = ( "%6i"  % magnDecl(t424Row[13])).rjust( 6, ' ')
     navdElev = ( "     0")
-    navdFreq = (t424Row[9][0:5]).rjust( 5, ' ')
+    navdFreq = (t424Row[9][1:4]).rjust( 5, ' ')
     navdClas = t424Row[10]
     navdRnge = '  0'
     if (navdClas[1:3] == 'H') :
@@ -464,37 +474,80 @@ def compNdbs(tNavId):
 if __name__ == '__main__':
   normArgs(sys.argv[1:])
   #
-  if doAll : 
-    summPFId = "./ndb-mismatch.txt"
-    listPFId = "./ndb-list.txt"
-    addnPFId = "./ndb-nav.dat"
-    summHndl = open( summPFId, 'a' )
-    listHndl = open( listPFId, 'a' )
-    addnHndl = open( addnPFId, 'w' )
-    summFlag = 1
-    addNavd  = 1
-    #
-    a424Table   = 'ndb_navaid'
-    a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
-    a424_config  = load_config(filename=a424ini)
-    try:
-      with psycopg2.connect(**a424_config) as listConn:
-        with listConn.cursor() as listCurs:
-          listQuery = "SELECT * FROM %s " \
-          % (a424_schTbl)
-          listCurs.execute(listQuery)
-          print("rowcount: ", listCurs.rowcount)
-          row = listCurs.fetchone()
-          while row is not None:
-            navId = row[6]
-            compNdbs(navId)
-            #print(row)
+  if (showHelp > 0 ) :
+    progName = sys.argv[0]
+    print(" \n ")
+    print(" %s : Compare arinc424 Nav Data with Flightgear datasets" % progName )
+    print("  ")
+    print("Prerequ: ")
+    print("  Install PyARINC424 and build the ARINC242     postsegrsql database  ")
+    print("  Install PyNavdat   and build Flightgear xp810 postsegrsql database  ")
+    print("  ")
+    print(" Example calls  ")
+    print("   for Single NDB Id:  %s -i AMF -t n " %  progName)
+    print("   for Single VHF Id:  %s -i BRW -t v " %  progName)
+    print("   for All    NDB   :  %s        -t n " %  progName)
+    print("   for All    VHF Id:  %s        -t v " %  progName)
+    print("  ")
+    print(" Default:  Compare all vhf types  ")
+    print("  ")
+    print("This python3 script accepts a single navaid ident or 'all navId's ")
+    print("  and compares arinc424 database contents with Flightgear's xp810 data ")
+    print("If Lat/Lon, Mag Declination difference exceeds thresold,       ")
+    print("  or key values, e.g. staion frequencies,  differ  ")
+    print("  then differences are noted in xxx-mismatch.txt and entries are ")
+    print("  appended to xxx-nav.dat ")
+    print("  ")
+    print("Hint: To sort xxx-nav.dat into adds-nav.dat :   ")
+    print("  cat xxx-nav.dat  | sort -k1,1r -k9,9  > vhf-adds-nav.dat  ")
+    print("  ")
+    print("  ")
+  #
+  else :
+    if (compType == 'ndb') :
+      summPFId  = "./ndb-mismatch.txt"
+      listPFId  = "./ndb-list.txt"
+      addnPFId  = "./ndb-nav.dat"
+      a424Table = 'ndb_navaid'
+    else :   
+      summPFId  = "./vhf-mismatch.txt"
+      listPFId  = "./vhf-list.txt"
+      addnPFId  = "./vhf-nav.dat"
+      a424Table = 'vhf_navaid'
+    #  
+    if compAll : 
+      summHndl  = open( summPFId, 'a' )
+      listHndl  = open( listPFId, 'a' )
+      addnHndl  = open( addnPFId, 'w' )
+      summFlag  = 1
+      addNavd   = 1
+      #
+      a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
+      a424_config  = load_config(filename=a424ini)
+      try:
+        with psycopg2.connect(**a424_config) as listConn:
+          with listConn.cursor() as listCurs:
+            listQuery = "SELECT * FROM %s " \
+            % (a424_schTbl)
+            listCurs.execute(listQuery)
+            print("rowcount: ", listCurs.rowcount)
             row = listCurs.fetchone()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-    summHndl.close()    
-    listHndl.close()    
-    addnHndl.close()    
-  else:       
-    compNdbs(navId)
+            while row is not None:
+              navId = row[6]
+              if (compType == 'ndb') :
+                compNdbs(navId)
+              else :  
+                compVhfs(navId)
+              #print(row)
+              row = listCurs.fetchone()
+      except (Exception, psycopg2.DatabaseError) as error:
+          print(error)
+      summHndl.close()    
+      listHndl.close()    
+      addnHndl.close()    
+    else:       
+      if (compType == 'ndb') :
+        compNdbs(navId)
+      else :  
+        compVhfs(navId)
   #
