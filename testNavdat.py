@@ -50,7 +50,97 @@ def magnDecl( tStr) :
     tDecl *= -1
   return(tDecl)
   
-def aVhfToNavdat ( t424Row, navdatHndl) :
+def aLocToNavd ( t424Row, navdatHndl) :
+  # xp810: Rowc 4/5, Lat, Lon, ElFt, FMHz, RngNM, BngT, Iden, ICAO, RWay, Name-Type
+  aSect = t424Row[2]
+  aSubs = t424Row[4]
+  aCatg= t424Row[6]
+  if (aSect == 'P') :
+    if not (t424Row[10] == '' ) :
+      navdLati = ( "%-02.8f" % (deciLati( t424Row[10]))).rjust(12, ' ')
+    if not (t424Row[11] == '' ) :
+      navdLong = ( "%-03.8f" % (deciLong( t424Row[11]))).rjust(13, ' ')
+    if not (t424Row[21] == '' ) :
+      navdElev = ( "%6i"  % int(t424Row[21])).rjust( 6, ' ')
+    else : 
+      navdElev = '     0'  
+    navdFreq = (t424Row[8][0:5]).rjust( 5, ' ')
+    navdBngT = ( "%3.3f" % (int( t424Row[12])/10.0)).rjust(11)
+    navdIden = t424Row[5].ljust( 4, ' ')
+    navdIcao = t424Row[3].ljust( 4, ' ')
+    navdRway = t424Row[9][2:].ljust(3)
+    navdName = 'Undefined'
+    if (aCatg == '0') :
+      navdName = 'LOC'
+      navdCode =  '5' 
+      navdRnge =  ' 18' 
+    if (aCatg == '1') :
+      navdName = 'ILS Cat I'  
+      navdCode =  '4' 
+      navdRnge =  ' 18' 
+    if (aCatg == '2') :
+      navdName = 'ILS Cat II'  
+      navdCode =  '4' 
+      navdRnge =  ' 25' 
+    if (aCatg == '3') :
+      navdName = 'ILS Cat III'  
+      navdCode =  '4' 
+      navdRnge =  ' 35' 
+    if (aCatg == 'L') :
+      navdName = 'LDA with GS'  
+      navdCode =  '5' 
+      navdRnge =  ' 18' 
+    if (aCatg == 'A') :
+      navdName = 'LDA  no  GS'  
+      navdCode =  '5' 
+      navdRnge =  ' 18' 
+    if (aCatg == 'SL') :
+      navdName = 'SDF with GS'  
+      navdCode =  '5' 
+      navdRnge =  ' 18' 
+    if (aCatg == 'F') :
+      navdName = 'SDF  no  GS'  
+      navdCode =  '5' 
+      navdRnge =  ' 18' 
+    #
+    navdLine = ("%s %s %s %s %s %s %s %s %s %s %s\n" %  \
+    (navdCode, navdLati, navdLong, navdElev, navdFreq, navdRnge, \
+     navdBngT, navdIden, navdIcao, navdRway, navdName ))
+    if verbose :
+      print( navdLine)
+    if navdFlag :  
+      addnHndl.write( navdLine)
+    #
+ 
+def aGSToNavd ( t424Row, navdatHndl) :     
+    if not (t424Row[13] == '' ) :
+      # GS: RCode, Lat, Lon, ElFt, Freq, Rnge, Angl+Brng, Id, Icao, Rwy, Name 
+      navdCode =  '6' 
+      navdLati = ( "%-02.8f" % (deciLati(t424Row[13]))).rjust(12, ' ')
+      navdLong = ( "%-03.8f" % (deciLong(t424Row[14]))).rjust(13, ' ')
+      navdElev = t424Row[21].rjust( 6, ' ')
+      navdFreq = (t424Row[8][0:5]).rjust( 5, ' ')
+      navdRnge = ' 10'
+      navdAngl = t424Row[19].rjust( 3, ' ')
+      navdBngT = ( "%3.3f" % (int( t424Row[12])/10.0)).rjust(7)
+      navdIden = t424Row[5].ljust( 4, ' ')
+      navdIcao = t424Row[3].ljust( 4, ' ')
+      navdRway = t424Row[9][2:].ljust(3)
+      navdName = 'GS'
+      navdLine = ("%s %s %s %s %s %s  %s%s %s %s %s %s\n" %  \
+      (navdCode, navdLati, navdLong, navdElev, navdFreq, navdRnge, \
+       navdAngl, navdBngT, navdIden, navdIcao, navdRway, navdName ))
+      if verbose :
+        print( navdLine)
+      if navdFlag :  
+        addnHndl.write( navdLine)
+    #
+    
+    
+    
+  #   
+
+def aVhfToNavd ( t424Row, navdatHndl) :
   aSect = t424Row[2]
   aSubs = t424Row[3]
   aClas = t424Row[10]
@@ -86,7 +176,7 @@ def aVhfToNavdat ( t424Row, navdatHndl) :
       navdRnge, navdNuse, navdIden, navdName ))
       if verbose :
         print( navdLine)
-      if addNavd :  
+      if navdFlag :  
         addnHndl.write( navdLine)
     else :  
       # 'D' ' ' : VOR or VORDME or TACAN, key off VHF Class : Line[11]
@@ -106,7 +196,7 @@ def aVhfToNavdat ( t424Row, navdatHndl) :
         navdRnge, navdDecl, navdIden, navdName ))
         if verbose :
           print( navdLine)
-        if addNavd :  
+        if navdFlag :  
           addnHndl.write( navdLine)
         if not(t424Row[14] == '' ) :
           # DME portion of VOR-DME 
@@ -118,7 +208,7 @@ def aVhfToNavdat ( t424Row, navdatHndl) :
           navdRnge, navdDecl, navdIden, navdName ))
           if verbose :
             print( navdLine)
-          if addNavd :  
+          if navdFlag :  
             addnHndl.write( navdLine)
       else :
         navdCode = '13'
@@ -135,11 +225,11 @@ def aVhfToNavdat ( t424Row, navdatHndl) :
         navdRnge, navdDecl, navdIden, navdName ))
         if verbose :
           print( navdLine)
-        if addNavd :  
+        if navdFlag :  
           addnHndl.write( navdLine)
   #   
 
-def aNdbToNavdat ( t424Row, navdatHndl) :
+def aNdbToNavd ( t424Row, navdatHndl) :
   aSect = t424Row[2]
   aSubs = t424Row[3]
   aClas = t424Row[10]
@@ -151,9 +241,9 @@ def aNdbToNavdat ( t424Row, navdatHndl) :
       navdLati = ( "%-02.8f" % (deciLati( t424Row[11]))).rjust(12, ' ')
     if not (t424Row[12] == '' ) :
       navdLong = ( "%-03.8f" % (deciLong( t424Row[12]))).rjust(13, ' ')
-    navdDecl = ( "%6i"  % magnDecl(t424Row[13])).rjust( 6, ' ')
+    navdDecl = ("%6i"  % magnDecl(t424Row[13])).rjust( 6, ' ')
     navdElev = ( "     0")
-    navdFreq = (t424Row[9][0:5]).rjust( 5, ' ')
+    navdFreq = (t424Row[9][1:4]).rjust( 5, ' ')
     navdClas = t424Row[10]
     navdRnge = '  0'
     if (navdClas[1:3] == 'H') :
@@ -172,7 +262,7 @@ def aNdbToNavdat ( t424Row, navdatHndl) :
     navdRnge, navdNuse, navdIden, navdName ))
     if verbose :
       print( navdLine)
-    if addNavd :  
+    if navdFlag :  
       addnHndl.write( navdLine)
   #   
 
@@ -184,14 +274,23 @@ TACANLine  = ('S', 'USA', 'D',  '', '', '', 'BAB', 'K2', '0', '10860', ' TLW', '
 DMELine    = ('S', 'CAN', 'D', '', '', '', 'YOW', 'CY', '0', '11460', ' DUW', '', '', 'YOW', 'N45263013', 'W075534896', 'W0140', '00450', '3', '', '', 'NAR', 'OTTAWA', '00306', '2401')
 NDBLine    = ('S', 'USA', 'D', 'B', '', '', 'ADG', 'K5', '0', '02780', 'H MW', 'N41521195', 'W084043893', 'W0060', 'NAR', 'ADRIAN', '26459', '2112')
 NDBLine2   = ('S', 'CAN', 'D', 'B', '', '', 'CRN', 'PA', '0', '02810', 'H  W', 'N61060630', 'W155340713', 'E0150', 'NAR', 'CAIRN MOUNTAIN', '00371', '1713')
+ILSCATI    = ('S', 'USA', 'P', 'KBOS', 'I', 'IDGU', '1', '0', '11130', 'RW27', 'N42211848', 'W071005905', '2716', 'N42213130', 'W070592835', '0975', '', '1051', '0503', '300', 'W0150', '57', '00012', '37448', '1711')
+ILSCATIII  = ('S', 'USA', 'P', 'KBOS', 'I', 'IBOS', '3', '0', '11030', 'RW04R', 'N42225597', 'W070594819', '0347', 'N42212182', 'W071002455', '2058', '', '1016', '0367', '300', 'W0150', '51', '00010', '37447', '1711')
+ILSNOGS   = ('S', 'USA', 'P', 'KOWD', 'I', 'IOWD', '0', '0', '10830', 'RW35', 'N42114528', 'W071104517', '3498', '', '', '0855', '', '', '0600', '', 'W0150', '', '', '76975', '2305')
 
 verbose = 1
-addNavd = 0
-aVhfToNavdat ( NDBLine, '')
-aVhfToNavdat ( VORLine, '')
-aVhfToNavdat ( VORDMELine, '')
-aVhfToNavdat ( VORTACLine, '')
-aVhfToNavdat ( TACANLine, '')
-aVhfToNavdat ( DMELine, '')
-aNdbToNavdat ( NDBLine, '')
-aNdbToNavdat ( NDBLine2, '')
+navdFlag = 0
+aVhfToNavd ( NDBLine, '')
+aVhfToNavd ( VORLine, '')
+aVhfToNavd ( VORDMELine, '')
+aVhfToNavd ( VORTACLine, '')
+aVhfToNavd ( TACANLine, '')
+aVhfToNavd ( DMELine, '')
+aNdbToNavd ( NDBLine, '')
+aNdbToNavd ( NDBLine2, '')
+aLocToNavd ( ILSCATI, '' )
+aGSToNavd  ( ILSCATI, '' )
+aLocToNavd ( ILSCATIII, '' )
+aGSToNavd  ( ILSCATIII, '' )
+aLocToNavd ( ILSNOGS, '' )
+aGSToNavd  ( ILSNOGS, '' )

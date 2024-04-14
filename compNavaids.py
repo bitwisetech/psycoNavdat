@@ -11,19 +11,19 @@ x810ini   = "x810db.ini"
 a424Schem = 'cycle2403'
 x810Schem = 'cyclexp810'
 #
-addNavd  = 0
+navdFlag  = 0
 compAll  = 1
 compType = 'vhf'
 showHelp = 0
-summFlag = 0
+listFlag = 1
 verbose  = 0
 #
 def normArgs(argv) :
   global compAll, compType, verbose, navId, showHelp
   # get args
   try:
-    opts, args = getopt.getopt(argv, "hi:t:v", \
-      ["help", "id=", "type=", "verbose" ] )
+    opts, args = getopt.getopt(argv, "hi:lnt:v", \
+      ["help", "id=", "list",  "type=", "verbose" ] )
   except getopt.GetoptError:
      print ('sorry, args do not make sense ')
      sys.exit(2)
@@ -34,6 +34,10 @@ def normArgs(argv) :
     if   opt in ("-i", "--id"):
       navId  = arg
       compAll  = 0 
+    if   opt in ("-l", "--list"):
+      listFlag = 1
+    if   opt in ("-n", "--navd"):
+      navdFlag  = 1
     if   opt in ("-t", "--type"):
       compType = arg
     if   opt in ("-v", "--verbose"):
@@ -90,7 +94,7 @@ def magnDecl( tStr) :
     tDecl *= -1
   return(tDecl)
   
-def aVhfToNavdat ( t424Row, navdatHndl) :
+def aVhfToNavd ( t424Row, navdatHndl) :
   aSect = t424Row[2]
   aSubs = t424Row[3]
   aClas = t424Row[10]
@@ -126,7 +130,7 @@ def aVhfToNavdat ( t424Row, navdatHndl) :
       navdRnge, navdNuse, navdIden, navdName ))
       if verbose :
         print( navdLine)
-      if addNavd :  
+      if navdFlag :  
         addnHndl.write( navdLine)
     else :  
       # 'D' ' ' : VOR or VORDME or TACAN, key off VHF Class : Line[11]
@@ -146,7 +150,7 @@ def aVhfToNavdat ( t424Row, navdatHndl) :
         navdRnge, navdDecl, navdIden, navdName ))
         if verbose :
           print( navdLine)
-        if addNavd :  
+        if navdFlag :  
           addnHndl.write( navdLine)
         if not(t424Row[14] == '' ) :
           # DME portion of VOR-DME 
@@ -158,7 +162,7 @@ def aVhfToNavdat ( t424Row, navdatHndl) :
           navdRnge, navdDecl, navdIden, navdName ))
           if verbose :
             print( navdLine)
-          if addNavd :  
+          if navdFlag :  
             addnHndl.write( navdLine)
       else :
         navdCode = '13'
@@ -175,7 +179,7 @@ def aVhfToNavdat ( t424Row, navdatHndl) :
         navdRnge, navdDecl, navdIden, navdName ))
         if verbose :
           print( navdLine)
-        if addNavd :  
+        if navdFlag :  
           addnHndl.write( navdLine)
   #   
 
@@ -185,11 +189,11 @@ def compVhfs(tNavId):
   x810_config = load_config(filename=x810ini)
   a424Table   = 'vhf_navaid'
   x810Table   = 'vhf_navaid'
-  aItemName   = 'vor_identifier'
-  xItemName   = 'vor_identifier'
+  aItemName   = 'vor_Identifier'
+  xItemName   = 'vor_Identifier'
   a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
   x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
-  summLine = ("ID: %s  " % tNavId )
+  listLine = ("ID: %s  " % tNavId )
   a424Row = ''
   try:
     with psycopg2.connect(**a424_config) as conn:
@@ -201,9 +205,8 @@ def compVhfs(tNavId):
           if ( verbose > 0 ):
             print("%s ID: %s Has Rowcount of %i " % \
             ( a424Schem , navId, cur.rowcount))
-          summLine = ( " %s aRowcount: %i " % \
-          (summLine, cur.rowcount ))
-          summFlag = 1 
+          listLine = ( " %s aRowcount: %i " % \
+          (listLine, cur.rowcount ))
           a424Lati = 0
           a424Long = 0
           a424Freq =  ''
@@ -227,7 +230,7 @@ def compVhfs(tNavId):
           # a424 Lat, Lon blank: try for non-VOR DME   
           if ( (a424Row[11] == '' ) and (a424Row[12] == '')) :
             x810_schTbl  = "%s.ndat_dme" %  (x810Schem)
-            xItemName = "dme_identifier"
+            xItemName = "DME_Identifier"
             a424Lati = deciLati( a424Row[14])
             a424Long = deciLong( a424Row[15])
           else :              
@@ -251,9 +254,8 @@ def compVhfs(tNavId):
           if ( verbose > 0 ):
             print("%s ID: %s Has Rowcount of %i " % \
             ( x810Schem , navId, cur.rowcount))
-          summLine = ( " %s xRowcount: %i " % \
-          (summLine, cur.rowcount ))
-          summFlag = 1 
+          listLine = ( " %s xRowcount: %i " % \
+          (listLine, cur.rowcount ))
           x810Lati = 0
           x810Long = 0
           x810Freq =  ''
@@ -283,34 +285,31 @@ def compVhfs(tNavId):
             if (verbose > 0) :
               print (" %s Matches OK " % tNavId) 
           else :
-            summFlag = 1 
             if (diffLati > 0.0001 )  :
-              summLine = ( "%s aLati: %f  xLati: %f " % \
-              (summLine, a424Lati, x810Lati )) 
+              listLine = ( "%s aLati: %f  xLati: %f " % \
+              (listLine, a424Lati, x810Lati )) 
             if (diffLong > 0.0001 )  :
-              summLine = ( "%s aLong: %f  xLong: %f " % \
-              (summLine, a424Long, x810Long ))
+              listLine = ( "%s aLong: %f  xLong: %f " % \
+              (listLine, a424Long, x810Long ))
             if not (x810Freq == a424Freq) :
-              summLine = ( "%s aFreq: %s  xFreq: %s " % \
-              (summLine, a424Freq, x810Freq ))
+              listLine = ( "%s aFreq: %s  xFreq: %s " % \
+              (listLine, a424Freq, x810Freq ))
             if (a424Decl != x810Decl)  :
-              summLine = ( "%s aDecl: %f  xDecl: %f " % \
-              (summLine, a424Decl, x810Decl))
+              listLine = ( "%s aDecl: %f  xDecl: %f " % \
+              (listLine, a424Decl, x810Decl))
             if (verbose > 0) :
-              print ("%s Mismatch %s " % (tNavId, summLine))
+              print ("%s Mismatch %s " % (tNavId, listLine))
             #
-            if summFlag :
-              print( summLine )
-              summHndl.write("%s\n" % summLine)
-              listHndl.write("%s\n" % tNavId)
-              if ( verbose > 0 ) :
-                print( navdLine)
-            aVhfToNavdat ( a424Row, addnHndl)  
-            #nvdbHndl.write( navdLine)
+            if listFlag :
+              listHndl.write("%s\n" % listLine)
+            if ( verbose > 0 ) :
+              print( listLine)
+            if (not( a424Row == '') and (navdFlag > 0)) :
+              aVhfToNavd ( a424Row, addnHndl)  
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
 
-def aNdbToNavdat ( t424Row, navdatHndl) :
+def aNdbToNavd ( t424Row, navdatHndl) :
   aSect = t424Row[2]
   aSubs = t424Row[3]
   aClas = t424Row[10]
@@ -343,7 +342,7 @@ def aNdbToNavdat ( t424Row, navdatHndl) :
     navdRnge, navdNuse, navdIden, navdName ))
     if verbose :
       print( navdLine)
-    if addNavd :  
+    if navdFlag :  
       addnHndl.write( navdLine)
   #   
 
@@ -353,11 +352,11 @@ def compNdbs(tNavId):
   x810_config = load_config(filename=x810ini)
   a424Table   = 'ndb_navaid'
   x810Table   = 'ndb_navaid'
-  aItemName   = 'NDB_identifier'
-  xItemName   = 'NDB_identifier'
+  aItemName   = 'NDB_Identifier'
+  xItemName   = 'NDB_Identifier'
   a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
   x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
-  summLine = ("ID: %s  " % tNavId )
+  listLine = ("ID: %s  " % tNavId )
   a424Row = ''
   try:
     with psycopg2.connect(**a424_config) as conn:
@@ -369,8 +368,8 @@ def compNdbs(tNavId):
           if ( verbose > 0 ):
             print("%s ID: %s Has Rowcount of %i " % \
             ( a424Schem , navId, cur.rowcount))
-          summLine = ( " %s aRowcount: %i " % \
-          (summLine, cur.rowcount ))
+          listLine = ( " %s aRowcount: %i " % \
+          (listLine, cur.rowcount ))
           a424Lati = 0
           a424Long = 0
           a424Freq =  ''
@@ -394,7 +393,7 @@ def compNdbs(tNavId):
           # a424 Lat, Lon blank: try for non-VOR DME   
           if ( (a424Row[11] == '' ) and (a424Row[12] == '')) :
             x810_schTbl  = "%s.ndat_dme" %  (x810Schem)
-            xItemName = "dme_identifier"
+            xItemName = "DME_Identifier"
             a424Lati = deciLati( a424Row[14])
             a424Long = deciLong( a424Row[15])
           else :              
@@ -418,8 +417,8 @@ def compNdbs(tNavId):
           if ( verbose > 0 ):
             print("%s ID: %s Has Rowcount of %i " % \
             ( x810Schem , navId, cur.rowcount))
-          summLine = ( " %s xRowcount: %i " % \
-          (summLine, cur.rowcount ))
+          listLine = ( " %s xRowcount: %i " % \
+          (listLine, cur.rowcount ))
           x810Lati = 0
           x810Long = 0
           x810Freq =  ''
@@ -448,26 +447,23 @@ def compNdbs(tNavId):
               print (" %s Matches OK " % tNavId) 
           else :
             if (diffLati > 0.0001 )  :
-              summLine = ( "%s aLati: %f  xLati: %f " % \
-              (summLine, a424Lati, x810Lati )) 
+              listLine = ( "%s aLati: %f  xLati: %f " % \
+              (listLine, a424Lati, x810Lati )) 
             if (diffLong > 0.0001 )  :
-              summLine = ( "%s aLong: %f  xLong: %f " % \
-              (summLine, a424Long, x810Long ))
+              listLine = ( "%s aLong: %f  xLong: %f " % \
+              (listLine, a424Long, x810Long ))
             if not (x810Freq == a424Freq) :
-              summLine = ( "%s aFreq: %s  xFreq: %s " % \
-              (summLine, a424Freq, x810Freq ))
+              listLine = ( "%s aFreq: %s  xFreq: %s " % \
+              (listLine, a424Freq, x810Freq ))
             if (verbose > 0) :
-              print ("%s Mismatch %s " % (tNavId, summLine))
+              print ("%s Mismatch %s " % (tNavId, listLine))
             #
-            if summFlag :
-              print( summLine )
-              summHndl.write("%s\n" % summLine)
-              listHndl.write("%s\n" % tNavId)
-              if ( verbose > 0 ) :
-                print( navdLine)
-            if not( a424Row == '') :
-              aNdbToNavdat ( a424Row, addnHndl)  
-            #nvdbHndl.write( navdLine)
+            if listFlag :
+              listHndl.write("%s\n" % listLine)
+            if ( verbose > 0 ) :
+              print( listLine)
+            if (not( a424Row == '') and (navdFlag > 0)) :
+              aNdbToNavd ( a424Row, addnHndl)  
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
 
@@ -477,26 +473,34 @@ if __name__ == '__main__':
   if (showHelp > 0 ) :
     progName = sys.argv[0]
     print(" \n ")
-    print(" %s : Compare arinc424 Nav Data with Flightgear datasets" % progName )
+    print(" %s : Compare ARINC424 with Flightgear postgres databases " % progName )
     print("  ")
     print("Prerequ: ")
     print("  Install PyARINC424 and build the ARINC242     postsegrsql database  ")
     print("  Install PyNavdat   and build Flightgear xp810 postsegrsql database  ")
     print("  ")
-    print(" Example calls  ")
+    print("This python3 script accepts a single navaid ident or 'all navId's ")
+    print("  and compares arinc424 database contents with Flightgear's xp810 data ")
+    print("If Lat/Lon, Mag Declination difference exceeds thresold,       ")
+    print("  or key values, e.g. staion frequencies,  differ  ")
+    print("  then differences are noted in xxx-list.txt and entries are ")
+    print("  appended to xxx-nav.dat ")
+    print("  ")
+    print(" Options :")
+    print("   -h --help Print this help ")
+    print("   -i --id=  Compare arinc vs x810 for this single navId ( else compare all ")
+    print("   -l --list Append output for single id, rewrite output to xxx-list.txt ")
+    print("   -n --navd Append output for single id, rewrite output to xxx-nav.dat ")
+    print("   -t --type Specify 'ndb or 'vhf' (default) for navdb table and 'xxx-' output ")
+    print("   -v --verbose Log progress to console ")
+    print("  ")
+    print(" Example calls:")
     print("   for Single NDB Id:  %s -i AMF -t n " %  progName)
     print("   for Single VHF Id:  %s -i BRW -t v " %  progName)
     print("   for All    NDB   :  %s        -t n " %  progName)
     print("   for All    VHF Id:  %s        -t v " %  progName)
     print("  ")
     print(" Default:  Compare all vhf types  ")
-    print("  ")
-    print("This python3 script accepts a single navaid ident or 'all navId's ")
-    print("  and compares arinc424 database contents with Flightgear's xp810 data ")
-    print("If Lat/Lon, Mag Declination difference exceeds thresold,       ")
-    print("  or key values, e.g. staion frequencies,  differ  ")
-    print("  then differences are noted in xxx-mismatch.txt and entries are ")
-    print("  appended to xxx-nav.dat ")
     print("  ")
     print("Hint: To sort xxx-nav.dat into adds-nav.dat :   ")
     print("  cat xxx-nav.dat  | sort -k1,1r -k9,9  > vhf-adds-nav.dat  ")
@@ -505,22 +509,21 @@ if __name__ == '__main__':
   #
   else :
     if (compType == 'ndb') :
-      summPFId  = "./ndb-mismatch.txt"
+      listPFId  = "./ndb-mismatch.txt"
       listPFId  = "./ndb-list.txt"
       addnPFId  = "./ndb-nav.dat"
       a424Table = 'ndb_navaid'
     else :   
-      summPFId  = "./vhf-mismatch.txt"
+      listPFId  = "./vhf-mismatch.txt"
       listPFId  = "./vhf-list.txt"
       addnPFId  = "./vhf-nav.dat"
       a424Table = 'vhf_navaid'
     #  
     if compAll : 
-      summHndl  = open( summPFId, 'a' )
-      listHndl  = open( listPFId, 'a' )
+      listHndl  = open( listPFId, 'w' )
       addnHndl  = open( addnPFId, 'w' )
-      summFlag  = 1
-      addNavd   = 1
+      listFlag  = 1
+      navdFlag   = 1
       #
       a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
       a424_config  = load_config(filename=a424ini)
@@ -542,10 +545,13 @@ if __name__ == '__main__':
               row = listCurs.fetchone()
       except (Exception, psycopg2.DatabaseError) as error:
           print(error)
-      summHndl.close()    
       listHndl.close()    
       addnHndl.close()    
-    else:       
+    else:
+      if (listFlag > 0 ) :
+        listHndl  = open( listPFId, 'a' )
+      if (navdFlag > 0 ) :
+        addnHndl  = open( listPFId, 'a' )
       if (compType == 'ndb') :
         compNdbs(navId)
       else :  
