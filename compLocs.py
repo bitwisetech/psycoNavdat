@@ -33,7 +33,7 @@ def normArgs(argv) :
       showHelp = 1
     if   opt in ("-i", "--id"):
       navId  = arg
-      compAll  = 0 
+      compAll  = 0
     if   opt in ("-l", "--list"):
       listFlag = 1
     if   opt in ("-n", "--navd"):
@@ -93,7 +93,7 @@ def magnDecl( tStr) :
   if ( tStr[0] == 'W' ):
     tDecl *= -1
   return(tDecl)
-  
+
 def aLocToNavd ( t424Row, navdatHndl) :
   # xp810: Rowc 4/5, Lat, Lon, ElFt, FMHz, RngNM, BngT, Iden, ICAO, RWay, Name-Type
   aSect = t424Row[2]
@@ -106,8 +106,8 @@ def aLocToNavd ( t424Row, navdatHndl) :
       navdLong = ( "%-03.8f" % (deciLong( t424Row[11]))).rjust(13, ' ')
     if not (t424Row[21] == '' ) :
       navdElev = ( "%6i"  % int(t424Row[21])).rjust( 6, ' ')
-    else : 
-      navdElev = '     0'  
+    else :
+      navdElev = '     0'
     navdFreq = (t424Row[8][0:5]).rjust( 5, ' ')
     navdBngT = ( "%3.3f" % (int( t424Row[12])/10.0)).rjust(11)
     navdIden = t424Row[5].ljust( 4, ' ')
@@ -116,50 +116,50 @@ def aLocToNavd ( t424Row, navdatHndl) :
     navdName = 'Undefined'
     if (aCatg == '0') :
       navdName = 'LOC'
-      navdCode =  '5' 
-      navdRnge =  ' 18' 
+      navdCode =  '5'
+      navdRnge =  ' 18'
     if (aCatg == '1') :
-      navdName = 'ILS Cat I'  
-      navdCode =  '4' 
-      navdRnge =  ' 18' 
+      navdName = 'ILS Cat I'
+      navdCode =  '4'
+      navdRnge =  ' 18'
     if (aCatg == '2') :
-      navdName = 'ILS Cat II'  
-      navdCode =  '4' 
-      navdRnge =  ' 25' 
+      navdName = 'ILS Cat II'
+      navdCode =  '4'
+      navdRnge =  ' 25'
     if (aCatg == '3') :
-      navdName = 'ILS Cat III'  
-      navdCode =  '4' 
-      navdRnge =  ' 35' 
+      navdName = 'ILS Cat III'
+      navdCode =  '4'
+      navdRnge =  ' 35'
     if (aCatg == 'L') :
-      navdName = 'LDA with GS'  
-      navdCode =  '5' 
-      navdRnge =  ' 18' 
+      navdName = 'LDA with GS'
+      navdCode =  '5'
+      navdRnge =  ' 18'
     if (aCatg == 'A') :
-      navdName = 'LDA  no  GS'  
-      navdCode =  '5' 
-      navdRnge =  ' 18' 
+      navdName = 'LDA  no  GS'
+      navdCode =  '5'
+      navdRnge =  ' 18'
     if (aCatg == 'SL') :
-      navdName = 'SDF with GS'  
-      navdCode =  '5' 
-      navdRnge =  ' 18' 
+      navdName = 'SDF with GS'
+      navdCode =  '5'
+      navdRnge =  ' 18'
     if (aCatg == 'F') :
-      navdName = 'SDF  no  GS'  
-      navdCode =  '5' 
-      navdRnge =  ' 18' 
+      navdName = 'SDF  no  GS'
+      navdCode =  '5'
+      navdRnge =  ' 18'
     #
     navdLine = ("%s %s %s %s %s %s %s %s %s %s %s\n" %  \
     (navdCode, navdLati, navdLong, navdElev, navdFreq, navdRnge, \
      navdBngT, navdIden, navdIcao, navdRway, navdName ))
     if verbose :
       print( navdLine)
-    if navdFlag :  
+    if navdFlag :
       addnHndl.write( navdLine)
     #
- 
+
 def aGSToNavd ( t424Row, navdatHndl) :
   if not (t424Row[13] == '' ) :
-    # GS: RCode, Lat, Lon, ElFt, Freq, Rnge, Angl+Brng, Id, Icao, Rwy, Name 
-    navdCode =  '6' 
+    # GS: RCode, Lat, Lon, ElFt, Freq, Rnge, Angl+Brng, Id, Icao, Rwy, Name
+    navdCode =  '6'
     navdLati = ( "%-02.8f" % (deciLati(t424Row[13]))).rjust(12, ' ')
     navdLong = ( "%-03.8f" % (deciLong(t424Row[14]))).rjust(13, ' ')
     navdElev = t424Row[21].rjust( 6, ' ')
@@ -176,7 +176,7 @@ def aGSToNavd ( t424Row, navdatHndl) :
      navdAngl, navdBngT, navdIden, navdIcao, navdRway, navdName ))
     if verbose :
       print( navdLine)
-    if navdFlag :  
+    if navdFlag :
       addnHndl.write( navdLine)
   #
 
@@ -217,20 +217,20 @@ def compLocs(tIcao):
           while a424Row is not None :
             if ( verbose > 0 ):
               print(a424Row)
-            aNavId = a424Row[5]   
+            aNavId = a424Row[5]
             if (a424Row[10] == ''):
               if verbose :
                 print ( tNavId, "  a424Lati Blank")
               a424Lati = 99
-            else :  
+            else :
               a424Lati = deciLati( a424Row[10])
             if (a424Row[11] == ''):
               if verbose :
                 print (tNavId, "  a424Long Blank")
               a424Long = 999
-            else :  
+            else :
               a424Long = deciLong( a424Row[11])
-            x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)            
+            x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
             a424Freq =         ( a424Row[8])
             if (verbose > 0) :
               print ( "lat : %f  lon : %f" % \
@@ -239,7 +239,7 @@ def compLocs(tIcao):
             if     (t424Row[13] == '' ) :
               # GS Lat Field Blank: Use x810 'No GS ' table below
               xItemName = 'localizer_NoGS'
-            else : 
+            else :
               xItemName = 'localizer'
             #
             try:
@@ -258,7 +258,7 @@ def compLocs(tIcao):
                     x810Long = 0
                     x810Freq =  ''
                     x810Decl = 999
-                  else : 
+                  else :
                     x810Row = cur.fetchone()
                     if (verbose > 0) :
                       print(x810Row)
@@ -278,13 +278,13 @@ def compLocs(tIcao):
                       ( diffLati, diffLong))
                     #
                     if ( (x810Freq == a424Freq) \
-                    and (diffLati < 0.0001) and (diffLong < 0.0001) ) : 
+                    and (diffLati < 0.0001) and (diffLong < 0.0001) ) :
                       if (verbose > 0) :
-                        print (" %s Matches OK " % aNavId) 
+                        print (" %s Matches OK " % aNavId)
                     else :
                       if (diffLati > 0.0001 )  :
                         listLine = ( "%s aLati: %f  xLati: %f " % \
-                        (listLine, a424Lati, x810Lati )) 
+                        (listLine, a424Lati, x810Lati ))
                       if (diffLong > 0.0001 )  :
                         listLine = ( "%s aLong: %f  xLong: %f " % \
                         (listLine, a424Long, x810Long ))
@@ -299,12 +299,12 @@ def compLocs(tIcao):
                       if ( verbose > 0 ) :
                         print( listLine)
                       if (not( a424Row == '') and (navdFlag > 0)) :
-                        aLocToNavd ( a424Row, addnHndl)  
-                        aGSToNavd ( a424Row, addnHndl)  
+                        aLocToNavd ( a424Row, addnHndl)
+                        aGSToNavd ( a424Row, addnHndl)
                     #
                     if not (t424Row[13] == '' ) :
                       #tbd: Search x810 rowCode 6 for GS entry
-                      compGS(a424Row )   
+                      compGS(a424Row )
             except (Exception, psycopg2.DatabaseError) as error:
                 print(error)
             a424Row = cur.fetchone()
@@ -358,13 +358,13 @@ if __name__ == '__main__':
       listPFId  = "./loc-list.txt"
       addnPFId  = "./loc-nav.dat"
       a424Table = 'loc_navaid'
-    else :   
+    else :
       listPFId  = "./vhf-mismatch.txt"
       listPFId  = "./vhf-list.txt"
       addnPFId  = "./vhf-nav.dat"
       a424Table = 'vhf_navaid'
-    #  
-    if compAll : 
+    #
+    if compAll :
       listHndl  = open( listPFId, 'w' )
       addnHndl  = open( addnPFId, 'w' )
       listFlag  = 1
@@ -384,14 +384,14 @@ if __name__ == '__main__':
               navId = row[6]
               if (compType == 'ndb') :
                 compNdbs(navId)
-              else :  
+              else :
                 compVhfs(navId)
               #print(row)
               row = listCurs.fetchone()
       except (Exception, psycopg2.DatabaseError) as error:
           print(error)
-      listHndl.close()    
-      addnHndl.close()    
+      listHndl.close()
+      addnHndl.close()
     else:
       if (listFlag > 0 ) :
         listHndl  = open( listPFId, 'a' )
@@ -399,6 +399,6 @@ if __name__ == '__main__':
         addnHndl  = open( listPFId, 'a' )
       if (compType == 'ndb') :
         compNdbs(navId)
-      else :  
+      else :
         compVhfs(navId)
   #

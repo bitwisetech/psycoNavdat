@@ -33,7 +33,7 @@ def normArgs(argv) :
       showHelp = 1
     if   opt in ("-i", "--id"):
       navId  = arg
-      compAll  = 0 
+      compAll  = 0
     if   opt in ("-l", "--list"):
       listFlag = 1
     if   opt in ("-n", "--navd"):
@@ -93,7 +93,7 @@ def magnDecl( tStr) :
   if ( tStr[0] == 'W' ):
     tDecl *= -1
   return(tDecl)
-  
+
 def aVhfToNavd ( t424Row, navdatHndl) :
   aSect = t424Row[2]
   aSubs = t424Row[3]
@@ -106,13 +106,13 @@ def aVhfToNavd ( t424Row, navdatHndl) :
     navdDecl = ( "%6i"  % magnDecl(t424Row[16])).rjust( 6, ' ')
     if not (t424Row[17] == '' ) :
       navdElev = ( "%6i"  % int(t424Row[17])).rjust( 6, ' ')
-    else : 
-      navdElev = '     0'  
+    else :
+      navdElev = '     0'
     navdFreq = (t424Row[9][0:5]).rjust( 5, ' ')
     navdClas = t424Row[10]
     navdRnge = '  0'
     if (navdClas[2:3] == 'T') :
-      navdRnge = ' 25'  
+      navdRnge = ' 25'
     if (navdClas[2:3] == 'L') :
       navdRnge = ' 40'
     if (navdClas[2:3] == 'H') :
@@ -130,30 +130,30 @@ def aVhfToNavd ( t424Row, navdatHndl) :
       navdRnge, navdNuse, navdIden, navdName ))
       if verbose :
         print( navdLine)
-      if navdFlag :  
+      if navdFlag :
         addnHndl.write( navdLine)
-    else :  
+    else :
       # 'D' ' ' : VOR or VORDME or TACAN, key off VHF Class : Line[11]
       navdCode = '3 '
       if ( 'V' in aClas) :
         if ( 'D' in aClas) :
           nameQual = 'VOR-DME'
         else :
-          if ( 'T' in aClas) : 
+          if ( 'T' in aClas) :
             nameQual = 'VORTAC'
-          else :   
+          else :
             nameQual = 'VOR'
-        # VOR or VOR-DME :  Code 3 Line   
+        # VOR or VOR-DME :  Code 3 Line
         navdName = ("%s %s" % ((t424Row[22].ljust( 4, ' ')), nameQual))
         navdLine = ("%s %s %s %s %s %s %s %s %s\n" %  \
         (navdCode, navdLati, navdLong, navdElev, navdFreq, \
         navdRnge, navdDecl, navdIden, navdName ))
         if verbose :
           print( navdLine)
-        if navdFlag :  
+        if navdFlag :
           addnHndl.write( navdLine)
         if not(t424Row[14] == '' ) :
-          # DME portion of VOR-DME 
+          # DME portion of VOR-DME
           navdCode = '12'
           navdLati = ( "%-02.8f" % (deciLati( t424Row[14]))).rjust(12, ' ')
           navdLong = ( "%-03.8f" % (deciLong( t424Row[15]))).rjust(13, ' ')
@@ -162,7 +162,7 @@ def aVhfToNavd ( t424Row, navdatHndl) :
           navdRnge, navdDecl, navdIden, navdName ))
           if verbose :
             print( navdLine)
-          if navdFlag :  
+          if navdFlag :
             addnHndl.write( navdLine)
       else :
         navdCode = '13'
@@ -179,9 +179,9 @@ def aVhfToNavd ( t424Row, navdatHndl) :
         navdRnge, navdDecl, navdIden, navdName ))
         if verbose :
           print( navdLine)
-        if navdFlag :  
+        if navdFlag :
           addnHndl.write( navdLine)
-  #   
+  #
 
 def compVhfs(tNavId):
   """ Retrieve data from the navaid tables """
@@ -211,7 +211,7 @@ def compVhfs(tNavId):
           a424Long = 0
           a424Freq =  ''
           a424Decl = 999
-        else : 
+        else :
           a424Row = cur.fetchone()
           if ( verbose > 0 ):
             print(a424Row)
@@ -219,22 +219,22 @@ def compVhfs(tNavId):
             if verbose :
               print ( tNavId, "  a424Lati Blank")
             a424Lati = 99
-          else :  
+          else :
             a424Lati = deciLati( a424Row[11])
           if (a424Row[12] == ''):
             if verbose :
               print (tNavId, "  a424Long Blank")
             a424Long = 999
-          else :  
+          else :
             a424Long = deciLong( a424Row[12])
-          # a424 Lat, Lon blank: try for non-VOR DME   
+          # a424 Lat, Lon blank: try for non-VOR DME
           if ( (a424Row[11] == '' ) and (a424Row[12] == '')) :
             x810_schTbl  = "%s.ndat_dme" %  (x810Schem)
             xItemName = "DME_Identifier"
             a424Lati = deciLati( a424Row[14])
             a424Long = deciLong( a424Row[15])
-          else :              
-            x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)            
+          else :
+            x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
           a424Freq =         ( a424Row[9])
           a424Decl = magnDecl( a424Row[16])
           if (verbose > 0) :
@@ -260,7 +260,7 @@ def compVhfs(tNavId):
           x810Long = 0
           x810Freq =  ''
           x810Decl = 999
-        else : 
+        else :
           x810Row = cur.fetchone()
           if (verbose > 0) :
             print(x810Row)
@@ -281,13 +281,13 @@ def compVhfs(tNavId):
             ( diffLati, diffLong))
           #
           if ( (x810Freq == a424Freq) and (x810Decl == a424Decl) \
-          and (diffLati < 0.0001) and (diffLong < 0.0001) ) : 
+          and (diffLati < 0.0001) and (diffLong < 0.0001) ) :
             if (verbose > 0) :
-              print (" %s Matches OK " % tNavId) 
+              print (" %s Matches OK " % tNavId)
           else :
             if (diffLati > 0.0001 )  :
               listLine = ( "%s aLati: %f  xLati: %f " % \
-              (listLine, a424Lati, x810Lati )) 
+              (listLine, a424Lati, x810Lati ))
             if (diffLong > 0.0001 )  :
               listLine = ( "%s aLong: %f  xLong: %f " % \
               (listLine, a424Long, x810Long ))
@@ -305,7 +305,7 @@ def compVhfs(tNavId):
             if ( verbose > 0 ) :
               print( listLine)
             if (not( a424Row == '') and (navdFlag > 0)) :
-              aVhfToNavd ( a424Row, addnHndl)  
+              aVhfToNavd ( a424Row, addnHndl)
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
 
@@ -327,7 +327,7 @@ def aNdbToNavd ( t424Row, navdatHndl) :
     navdClas = t424Row[10]
     navdRnge = '  0'
     if (navdClas[1:3] == 'H') :
-      navdRnge = ' 75'  
+      navdRnge = ' 75'
     if (navdClas[2:3] == ' ') :
       navdRnge = ' 50'
     if (navdClas[2:3] == 'M') :
@@ -342,9 +342,9 @@ def aNdbToNavd ( t424Row, navdatHndl) :
     navdRnge, navdNuse, navdIden, navdName ))
     if verbose :
       print( navdLine)
-    if navdFlag :  
+    if navdFlag :
       addnHndl.write( navdLine)
-  #   
+  #
 
 def compNdbs(tNavId):
   """ Retrieve data from the navaid tables """
@@ -374,7 +374,7 @@ def compNdbs(tNavId):
           a424Long = 0
           a424Freq =  ''
           a424Decl = 999
-        else : 
+        else :
           a424Row = cur.fetchone()
           if ( verbose > 0 ):
             print(a424Row)
@@ -382,22 +382,22 @@ def compNdbs(tNavId):
             if verbose :
               print ( tNavId, "  a424Lati Blank")
             a424Lati = 99
-          else :  
+          else :
             a424Lati = deciLati( a424Row[11])
           if (a424Row[12] == ''):
             if verbose :
               print (tNavId, "  a424Long Blank")
             a424Long = 999
-          else :  
+          else :
             a424Long = deciLong( a424Row[12])
-          # a424 Lat, Lon blank: try for non-VOR DME   
+          # a424 Lat, Lon blank: try for non-VOR DME
           if ( (a424Row[11] == '' ) and (a424Row[12] == '')) :
             x810_schTbl  = "%s.ndat_dme" %  (x810Schem)
             xItemName = "DME_Identifier"
             a424Lati = deciLati( a424Row[14])
             a424Long = deciLong( a424Row[15])
-          else :              
-            x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)            
+          else :
+            x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
           a424Freq = a424Row[9][1:4]
           a424Decl = magnDecl( a424Row[13])
           if (verbose > 0) :
@@ -422,7 +422,7 @@ def compNdbs(tNavId):
           x810Lati = 0
           x810Long = 0
           x810Freq =  ''
-        else : 
+        else :
           x810Row = cur.fetchone()
           if (verbose > 0) :
             print(x810Row)
@@ -442,13 +442,13 @@ def compNdbs(tNavId):
             ( diffLati, diffLong))
           #
           if ( (x810Freq == a424Freq) \
-          and (diffLati < 0.0001) and (diffLong < 0.0001) ) : 
+          and (diffLati < 0.0001) and (diffLong < 0.0001) ) :
             if (verbose > 0) :
-              print (" %s Matches OK " % tNavId) 
+              print (" %s Matches OK " % tNavId)
           else :
             if (diffLati > 0.0001 )  :
               listLine = ( "%s aLati: %f  xLati: %f " % \
-              (listLine, a424Lati, x810Lati )) 
+              (listLine, a424Lati, x810Lati ))
             if (diffLong > 0.0001 )  :
               listLine = ( "%s aLong: %f  xLong: %f " % \
               (listLine, a424Long, x810Long ))
@@ -463,7 +463,7 @@ def compNdbs(tNavId):
             if ( verbose > 0 ) :
               print( listLine)
             if (not( a424Row == '') and (navdFlag > 0)) :
-              aNdbToNavd ( a424Row, addnHndl)  
+              aNdbToNavd ( a424Row, addnHndl)
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
 
@@ -513,13 +513,13 @@ if __name__ == '__main__':
       listPFId  = "./ndb-list.txt"
       addnPFId  = "./ndb-nav.dat"
       a424Table = 'ndb_navaid'
-    else :   
+    else :
       listPFId  = "./vhf-mismatch.txt"
       listPFId  = "./vhf-list.txt"
       addnPFId  = "./vhf-nav.dat"
       a424Table = 'vhf_navaid'
-    #  
-    if compAll : 
+    #
+    if compAll :
       listHndl  = open( listPFId, 'w' )
       addnHndl  = open( addnPFId, 'w' )
       listFlag  = 1
@@ -539,14 +539,14 @@ if __name__ == '__main__':
               navId = row[6]
               if (compType == 'ndb') :
                 compNdbs(navId)
-              else :  
+              else :
                 compVhfs(navId)
               #print(row)
               row = listCurs.fetchone()
       except (Exception, psycopg2.DatabaseError) as error:
           print(error)
-      listHndl.close()    
-      addnHndl.close()    
+      listHndl.close()
+      addnHndl.close()
     else:
       if (listFlag > 0 ) :
         listHndl  = open( listPFId, 'a' )
@@ -554,6 +554,6 @@ if __name__ == '__main__':
         addnHndl  = open( listPFId, 'a' )
       if (compType == 'ndb') :
         compNdbs(navId)
-      else :  
+      else :
         compVhfs(navId)
   #
