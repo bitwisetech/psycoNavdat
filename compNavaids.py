@@ -85,13 +85,13 @@ def magnHdng( tStr, magnDecl):
   else:
     if (tStr[4] == 'T' ) :
       return(Hdng - magnDecl)
-    else:   
+    else:
       return(999)
 
 def trueHdng( tStr, magnVari):
   if  ( tStr[(len(tStr) - 1)] == 'T' ):
     tHdng = float([(len(tStr) - 2)]) / 10.0
-  else:  
+  else:
     tHdng = float([(len(tStr) - 1)]) / 10.0  + magnDecl
   return(tHdng)
 

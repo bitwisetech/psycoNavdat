@@ -20,7 +20,7 @@ listFlag = 1
 verbose  = 0
 #
 def normArgs(argv) :
-  global compAll, compType, verbose, Icao, showHelp
+  global compAll, compType, verbose, Icao, showHelp, navdFlag
   # get args
   try:
     opts, args = getopt.getopt(argv, "a:hlnt:v", \
@@ -86,13 +86,13 @@ def magnHdng( tStr, magnDecl):
   else:
     if (tStr[4] == 'T' ) :
       return(Hdng - magnDecl)
-    else:   
+    else:
       return(999)
 
 def trueHdng( tStr, magnVari):
   if  ( tStr[(len(tStr) - 1)] == 'T' ):
     tHdng = float(tStr[0:(len(tStr) - 2)]) / 10.0
-  else:  
+  else:
     tHdng = float(tStr[0:(len(tStr) - 1)]) / 10.0  + magnVari
   return(tHdng)
 
@@ -234,22 +234,22 @@ def compGS(a424Row, aNavId ) :
           x810Rway =      ( x810Row[10])
           #
           listLine = ("GS %s %s" % (a424Row[3], a424Row[5]))
-          mismatch = 0 
+          mismatch = 0
           diffLati = abs(x810Lati - a424Lati)
           diffLong = abs(x810Long - a424Long)
           if ((diffLati > 0.0001 ) or (diffLong > 0.0001 )) :
             mismatch = 1
             listLine = ( "%s aLatLon: ll=%f,%f  xLatLon: ll=%f,%f " % \
             (listLine, a424Lati, a424Long, x810Lati, x810Long ))
-          if not ( a424Elev == x810Elev ) :  
+          if not ( a424Elev == x810Elev ) :
             mismatch = 1
             listLine = ( "%s aElev: %i  xElev: %i " % \
             (listLine, a424Elev, x810Elev ))
-          if not ( a424Freq == x810Freq ) :  
+          if not ( a424Freq == x810Freq ) :
             mismatch = 1
             listLine = ( "%s aFreq: %s  xFreq: %s " % \
             (listLine, a424Freq, x810Freq ))
-          if not ( a424Angl == x810Angl ) :  
+          if not ( a424Angl == x810Angl ) :
             mismatch = 1
             listLine = ( "%s aAngl: %s  xAngl: %s " % \
             (listLine, a424Angl, x810Angl ))
@@ -265,8 +265,8 @@ def compGS(a424Row, aNavId ) :
             aGSToNavd( a424Row, addnHndl)
   except (Exception, psycopg2.DatabaseError) as error:
     print(error)
-        
-        
+
+
 
 def compLocs(tIcao):
   # compares: a424LOC~x810Loc; then a424LOC~x810LOCNoGS or a424GS~x810GS
@@ -320,7 +320,7 @@ def compLocs(tIcao):
             if (verbose > 0) :
               print ( "cLOCs a424 ID %s LOCLat: %f LOCLon: %f" % \
               ( aNavId, a424Lati, a424Long))
-            #  
+            #
             x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
             # check each LOC for GS or No GS and set x810 table
             if     (a424Row[13] == '' ) :
@@ -381,7 +381,7 @@ def compLocs(tIcao):
                         mismatch = 1
                         listLine = ( "%s aFreq: %s  xFreq: %s " % \
                         (listLine, a424Freq, x810Freq ))
-                      if ( mismatch > 0 ) :  
+                      if ( mismatch > 0 ) :
                         if (verbose > 0) :
                           print ("%s LOC Mismatch %s " % (aNavId, listLine))
                         if listFlag :
@@ -443,7 +443,7 @@ if __name__ == '__main__':
     listPFId  = "./loc-list.txt"
     addnPFId  = "./loc-nav.dat"
     a424Table = 'localizer'
-    addnHndl  = '' 
+    addnHndl  = ''
     #
     if compAll :
       listHndl  = open( listPFId, 'w' )
@@ -474,6 +474,6 @@ if __name__ == '__main__':
       if (listFlag > 0 ) :
         listHndl  = open( listPFId, 'a' )
       if (navdFlag > 0 ) :
-        addnHndl  = open( listPFId, 'a' )
+        addnHndl  = open( addnPFId, 'a' )
       compLocs(Icao)
   #
