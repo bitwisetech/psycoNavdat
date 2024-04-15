@@ -268,6 +268,8 @@ def compVhfs(tNavId):
           x810Freq =  ''
           x810Decl = 999
         else :
+          mismatch = 0
+          listLine = ("VHF %s %s" % (a424Row[5], a424Row[6]))
           x810Row = cur.fetchone()
           if (verbose > 0) :
             print(x810Row)
@@ -292,26 +294,24 @@ def compVhfs(tNavId):
             if (verbose > 0) :
               print (" %s Matches OK " % tNavId)
           else :
-            if (diffLati > 0.0001 )  :
-              listLine = ( "%s aLati: %f  xLati: %f " % \
-              (listLine, a424Lati, x810Lati ))
-            if (diffLong > 0.0001 )  :
-              listLine = ( "%s aLong: %f  xLong: %f " % \
-              (listLine, a424Long, x810Long ))
+            if ((diffLati > 0.0001 ) or (diffLong > 0.0001 ) ) :
+              mismatch = 1
+              listLine = ( "%s aLatLon: ll=%f,%f  xLatLon: ll=%f,%f " % \
+              (listLine, a424Lati, a424Long, x810Lati, x810Long ))
             if not (x810Freq == a424Freq) :
+              mismatch = 1
               listLine = ( "%s aFreq: %s  xFreq: %s " % \
               (listLine, a424Freq, x810Freq ))
             if (a424Decl != x810Decl)  :
+              mismatch = 1
               listLine = ( "%s aDecl: %f  xDecl: %f " % \
               (listLine, a424Decl, x810Decl))
-            if (verbose > 0) :
-              print ("%s Mismatch %s " % (tNavId, listLine))
-            #
-            if listFlag :
-              listHndl.write("%s\n" % listLine)
-            if ( verbose > 0 ) :
-              print( listLine)
-            if (not( a424Row == '') and (navdFlag > 0)) :
+            if (mismatch > 0) :
+              if (verbose > 0) :
+                print ("%s Mismatch %s " % (tNavId, listLine))
+              #
+              if listFlag :
+                listHndl.write("%s\n" % listLine)
               aVhfToNavd ( a424Row, addnHndl)
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
@@ -430,6 +430,8 @@ def compNdbs(tNavId):
           x810Long = 0
           x810Freq =  ''
         else :
+          mismatch = 0
+          listLine = ("NDB %s %s" % (a424Row[5], a424Row[6]))
           x810Row = cur.fetchone()
           if (verbose > 0) :
             print(x810Row)
@@ -453,23 +455,22 @@ def compNdbs(tNavId):
             if (verbose > 0) :
               print (" %s Matches OK " % tNavId)
           else :
-            if (diffLati > 0.0001 )  :
-              listLine = ( "%s aLati: %f  xLati: %f " % \
-              (listLine, a424Lati, x810Lati ))
-            if (diffLong > 0.0001 )  :
-              listLine = ( "%s aLong: %f  xLong: %f " % \
-              (listLine, a424Long, x810Long ))
+            if ((diffLati > 0.0001 ) or (diffLong > 0.0001 ) ) :
+              mismatch = 1
+              listLine = ( "%s aLatLon: ll=%f,%f  xLatLon: ll=%f,%f " % \
+              (listLine, a424Lati, a424Long, x810Lati, x810Long ))
             if not (x810Freq == a424Freq) :
+              mismatch = 1
               listLine = ( "%s aFreq: %s  xFreq: %s " % \
               (listLine, a424Freq, x810Freq ))
             if (verbose > 0) :
               print ("%s Mismatch %s " % (tNavId, listLine))
             #
-            if listFlag :
-              listHndl.write("%s\n" % listLine)
-            if ( verbose > 0 ) :
-              print( listLine)
-            if (not( a424Row == '') and (navdFlag > 0)) :
+            if (mismatch > 0) :
+              if listFlag :
+                listHndl.write("%s\n" % listLine)
+              if ( verbose > 0 ) :
+                print( listLine)
               aNdbToNavd ( a424Row, addnHndl)
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
