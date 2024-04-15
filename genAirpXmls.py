@@ -104,7 +104,7 @@ def get_magnVari( tIcao) :
   with dbConn.cursor() as cur:
     # query airport table for Mag Variation
     tQuery = "SELECT * FROM cycle2403.airport \
-              WHERE airport_identifier='%s' " % tIcao
+              WHERE Airport_Identifier='%s' " % tIcao
     cur.execute( tQuery)
     row = cur.fetchone()
     if ( cur.rowcount != 1 ) :
@@ -231,7 +231,7 @@ def mill_rwys(tIcao):
   with dbConn.cursor() as cur:
     # query runway table
     tQuery = "SELECT * FROM cycle2403.runway \
-              WHERE airport_identifier='%s'" % tIcao
+              WHERE Airport_Identifier='%s'" % tIcao
     cur.execute( tQuery)
     allRows = cur.fetchall()
   if ( cur.rowcount > 0 ) :
@@ -250,7 +250,7 @@ def mill_rwys(tIcao):
         with dbConn.cursor() as cur:
           # query localizer table for ILS
           lQuery = "SELECT * FROM cycle2403.localizer \
-                    WHERE airport_identifier='%s'" % tIcao
+                    WHERE Airport_Identifier='%s'" % tIcao
           cur.execute( lQuery)
           locsRows = cur.fetchall()
           if ( cur.rowcount > 0) :
@@ -360,11 +360,11 @@ def mill_rwys(tIcao):
 ###
 if __name__ == '__main__':
   normArgs(sys.argv[1:])
+  progName = sys.argv[0]
   if (showHelp > 0 ) :
-    mName = sys.argv[0]
     print(" \n ")
     print("    ")
-    print(" %s : Flightgear threshold, ils .xml files from CIFS database" % sys.argv[0] )
+    print(" %s : Flightgear threshold, ils .xml files from CIFS database" % profName )
     print("  ")
     print("Prerequ: Install PyARINC424 and build the ARINC242 postsegrsql database  ")
     print("  ref:  https://github.com/robertjkeller/PyARINC424  ")
@@ -376,10 +376,10 @@ if __name__ == '__main__':
     print("  Copy these scripts into psycopg2/env folder and execute from there  ")
     print("  Create a folder: psycopgs/env/Airports as a default output folder ")
     print("  ")
-    print(" %s : Options: " % sys.argv[0] )
+    print(" %s : Options: " % progName )
     print("   -a --airport [ ICAO for single airport ")
     print("          e.g %s -a KATL" %  mName  )
-    print("   -c --cifsAll Create output for complete CIFS databas: All airports")
+    print("   -c --cifsAll Create output for complete CIFS database: All airports")
     print("          Caution: will create subdirs, 6,000+ files: 25MBy+ flat file, 50MBy+ tree ")
     print("   -h --help    Print this help")
     print("   -m --multiPass Create multiple entries from spec file ")
