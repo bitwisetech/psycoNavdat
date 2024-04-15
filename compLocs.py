@@ -2,9 +2,10 @@
 import psycopg2, getopt, sys
 from config import load_config
 
-global compAll, verbose, navId, showHelp
+global compAll, verbose, Icao, showHelp
 
 # fallback values
+Icao      = 'KATL'
 navId     = 'LFV'
 a424ini   = "a424db.ini"
 x810ini   = "x810db.ini"
@@ -19,11 +20,11 @@ listFlag = 1
 verbose  = 0
 #
 def normArgs(argv) :
-  global compAll, compType, verbose, navId, showHelp
+  global compAll, compType, verbose, Icao, showHelp
   # get args
   try:
-    opts, args = getopt.getopt(argv, "hi:lnt:v", \
-      ["help", "id=", "list",  "type=", "verbose" ] )
+    opts, args = getopt.getopt(argv, "a:hlnt:v", \
+      ["airport=", "help", "list",  "type=", "verbose" ] )
   except getopt.GetoptError:
      print ('sorry, args do not make sense ')
      sys.exit(2)
@@ -31,8 +32,8 @@ def normArgs(argv) :
   for opt, arg in opts:
     if   opt in ('-h', "--help"):
       showHelp = 1
-    if   opt in ("-i", "--id"):
-      navId  = arg
+    if   opt in ("-a", "--airport"):
+      Icao  = arg
       compAll  = 0
     if   opt in ("-l", "--list"):
       listFlag = 1
@@ -78,14 +79,21 @@ def mtr2ft ( tStr):
     tDeci  = (int(tStr) / ( 12 * 0.0254))
     return ( tDeci)
 
-def trueHdng( tStr):
-  global magnVari
-  tHdng = float(tStr[0:4]) / 10.0
+def magnHdng( tStr, magnDecl):
+  Hdng = float(tStr[0:4]) / 10.0
   if  ( len(tStr) < 5 ):
-    tHdng -= magnVari
+    return(tHdng)
   else:
-    if ( (tStr[4]) != 'T' ) :
-      tHdng -= magnVari
+    if (tStr[4] == 'T' ) :
+      return(Hdng - magnDecl)
+    else:   
+      return(999)
+
+def trueHdng( tStr, magnVari):
+  if  ( tStr[(len(tStr) - 1)] == 'T' ):
+    tHdng = float(tStr[0:(len(tStr) - 2)]) / 10.0
+  else:  
+    tHdng = float(tStr[0:(len(tStr) - 1)]) / 10.0  + magnVari
   return(tHdng)
 
 def magnDecl( tStr) :
@@ -94,25 +102,27 @@ def magnDecl( tStr) :
     tDecl *= -1
   return(tDecl)
 
-def aLocToNavd ( t424Row, navdatHndl) :
+def aLocToNavd ( LTN_aRow, navdatHndl) :
   # xp810: Rowc 4/5, Lat, Lon, ElFt, FMHz, RngNM, BngT, Iden, ICAO, RWay, Name-Type
-  aSect = t424Row[2]
-  aSubs = t424Row[4]
-  aCatg= t424Row[6]
+  aSect = LTN_aRow[2]
+  aSubs = LTN_aRow[4]
+  aCatg = LTN_aRow[6]
   if (aSect == 'P') :
-    if not (t424Row[10] == '' ) :
-      navdLati = ( "%-02.8f" % (deciLati( t424Row[10]))).rjust(12, ' ')
-    if not (t424Row[11] == '' ) :
-      navdLong = ( "%-03.8f" % (deciLong( t424Row[11]))).rjust(13, ' ')
-    if not (t424Row[21] == '' ) :
-      navdElev = ( "%6i"  % int(t424Row[21])).rjust( 6, ' ')
+    if not (LTN_aRow[10] == '' ) :
+      navdLati = ( "%-02.8f" % (deciLati( LTN_aRow[10]))).rjust(12, ' ')
+    if not (LTN_aRow[11] == '' ) :
+      navdLong = ( "%-03.8f" % (deciLong( LTN_aRow[11]))).rjust(13, ' ')
+    if not (LTN_aRow[21] == '' ) :
+      navdElev = ( "%6i"  % int(LTN_aRow[21])).rjust( 6, ' ')
     else :
       navdElev = '     0'
-    navdFreq = (t424Row[8][0:5]).rjust( 5, ' ')
-    navdBngT = ( "%3.3f" % (int( t424Row[12])/10.0)).rjust(11)
-    navdIden = t424Row[5].ljust( 4, ' ')
-    navdIcao = t424Row[3].ljust( 4, ' ')
-    navdRway = t424Row[9][2:].ljust(3)
+    navdDecl = magnDecl(LTN_aRow[20])
+    trueBrng = trueHdng( LTN_aRow[12],  navdDecl )
+    navdBngT = ( "%3.3f" % trueBrng).rjust(11)
+    navdFreq = (LTN_aRow[8][0:5]).rjust( 5, ' ')
+    navdIden = LTN_aRow[5].ljust( 4, ' ')
+    navdIcao = LTN_aRow[3].ljust( 4, ' ')
+    navdRway = LTN_aRow[9][2:].ljust(3)
     navdName = 'Undefined'
     if (aCatg == '0') :
       navdName = 'LOC'
@@ -151,36 +161,112 @@ def aLocToNavd ( t424Row, navdatHndl) :
     (navdCode, navdLati, navdLong, navdElev, navdFreq, navdRnge, \
      navdBngT, navdIden, navdIcao, navdRway, navdName ))
     if verbose :
-      print( navdLine)
+      print( 'LOC Navd:', navdLine)
     if navdFlag :
       addnHndl.write( navdLine)
     #
 
-def aGSToNavd ( t424Row, navdatHndl) :
-  if not (t424Row[13] == '' ) :
+def aGSToNavd ( GTN_aRow, navdatHndl) :
+  if not (GTN_aRow[13] == '' ) :
     # GS: RCode, Lat, Lon, ElFt, Freq, Rnge, Angl+Brng, Id, Icao, Rwy, Name
     navdCode =  '6'
-    navdLati = ( "%-02.8f" % (deciLati(t424Row[13]))).rjust(12, ' ')
-    navdLong = ( "%-03.8f" % (deciLong(t424Row[14]))).rjust(13, ' ')
-    navdElev = t424Row[21].rjust( 6, ' ')
-    navdFreq = (t424Row[8][0:5]).rjust( 5, ' ')
+    navdLati = ( "%-02.8f" % (deciLati(GTN_aRow[13]))).rjust(12, ' ')
+    navdLong = ( "%-03.8f" % (deciLong(GTN_aRow[14]))).rjust(13, ' ')
+    navdElev = ( "%i"      % int(GTN_aRow[22])).rjust( 6, ' ')
+    navdFreq = (GTN_aRow[8][0:5]).rjust( 5, ' ')
     navdRnge = ' 10'
-    navdAngl = t424Row[19].rjust( 3, ' ')
-    navdBngT = ( "%3.3f" % (int( t424Row[12])/10.0)).rjust(7)
-    navdIden = t424Row[5].ljust( 4, ' ')
-    navdIcao = t424Row[3].ljust( 4, ' ')
-    navdRway = t424Row[9][2:].ljust(3)
+    navdAngl = GTN_aRow[19].rjust( 3, ' ')
+    navdBngT = ( "%3.3f" % (int( GTN_aRow[12])/10.0)).rjust(7)
+    navdIden = GTN_aRow[5].ljust( 4, ' ')
+    navdIcao = GTN_aRow[3].ljust( 4, ' ')
+    navdRway = GTN_aRow[9][2:].ljust(3)
     navdName = 'GS'
     navdLine = ("%s %s %s %s %s %s  %s%s %s %s %s %s\n" %  \
     (navdCode, navdLati, navdLong, navdElev, navdFreq, navdRnge, \
      navdAngl, navdBngT, navdIden, navdIcao, navdRway, navdName ))
     if verbose :
-      print( navdLine)
+      print( 'GS Navd:', navdLine)
     if navdFlag :
       addnHndl.write( navdLine)
   #
 
-def compGS(a424Row ) :
+def compGS(a424Row, aNavId ) :
+  # Compare GS entries in a424 LOC Row with x810 rCode 6 GS entry
+  #  RCode, Lat, Lon, Elev, Freq, RngNM, Angle, BngT, Iden, Icao, Rway, Name
+  x810Table   = 'glideslope'
+  xItemName   = 'Glide_Slope_Identifier'
+  x810_config = load_config(filename=x810ini)
+  x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
+  try:
+    with psycopg2.connect(**x810_config) as conn:
+      with conn.cursor() as GSxCur:
+        tQuery = "SELECT * FROM %s WHERE %s=\'%s\' " \
+        % (x810_schTbl, xItemName, aNavId)
+        GSxCur.execute(tQuery)
+        if not ( GSxCur.rowcount == 1 ):
+          if ( verbose > 0 ):
+            print(" compGS:  %s ID %s Has Rowcount of %i " % \
+            ( a424Schem , aNavId, GSxCur.rowcount))
+          x810Lati = 0
+          x810Long = 0
+          x810Freq =  ''
+          x810Decl = 999
+        else :
+          a424Lati = deciLati( a424Row[13])
+          a424Long = deciLong( a424Row[14])
+          a424Elev =      int( a424Row[22])
+          a424Freq =         ( a424Row[8])
+          a424Angl =         ( a424Row[19])
+          a424Rway =         ( a424Row[9][2:])
+          #
+          x810Row = GSxCur.fetchone()
+          if (verbose > 0) :
+            print( 'GS xRow:', x810Row)
+          if ( x810Row[1] == '' ):
+            print ( aNavId, "  x810Lati Blank")
+          if ( x810Row[2] == '' ):
+            print ( aNavId, "  x810Long Blank")
+          x810Lati = float(x810Row[1])
+          x810Long = float(x810Row[2])
+          x810Elev =   int( x810Row[3])
+          x810Freq =      ( x810Row[4])
+          x810Angl =      ( x810Row[6][0:4])
+          x810Rway =      ( x810Row[10])
+          #
+          listLine = ("GS %s %s" % (a424Row[3], a424Row[5]))
+          mismatch = 0 
+          diffLati = abs(x810Lati - a424Lati)
+          diffLong = abs(x810Long - a424Long)
+          if ((diffLati > 0.0001 ) or (diffLong > 0.0001 )) :
+            mismatch = 1
+            listLine = ( "%s aLatLon: ll=%f,%f  xLatLon: ll=%f,%f " % \
+            (listLine, a424Lati, a424Long, x810Lati, x810Long ))
+          if not ( a424Elev == x810Elev ) :  
+            mismatch = 1
+            listLine = ( "%s aElev: %i  xElev: %i " % \
+            (listLine, a424Elev, x810Elev ))
+          if not ( a424Freq == x810Freq ) :  
+            mismatch = 1
+            listLine = ( "%s aFreq: %s  xFreq: %s " % \
+            (listLine, a424Freq, x810Freq ))
+          if not ( a424Angl == x810Angl ) :  
+            mismatch = 1
+            listLine = ( "%s aAngl: %s  xAngl: %s " % \
+            (listLine, a424Angl, x810Angl ))
+          if not ( a424Rway == x810Rway ) :
+            mismatch = 1
+            listLine = ( "%s aRway: %s  xRway: %s " % \
+            (listLine, a424Rway, x810Rway ))
+          if ( mismatch > 0 ) :
+            if (verbose > 0) :
+              print ("%s GS Mismatch %s " % (aNavId, listLine))
+            if listFlag :
+              listHndl.write("%s\n" % listLine)
+            aGSToNavd( a424Row, addnHndl)
+  except (Exception, psycopg2.DatabaseError) as error:
+    print(error)
+        
+        
 
 def compLocs(tIcao):
   # compares: a424LOC~x810Loc; then a424LOC~x810LOCNoGS or a424GS~x810GS
@@ -189,125 +275,125 @@ def compLocs(tIcao):
   x810_config = load_config(filename=x810ini)
   a424Table   = 'localizer'
   x810Table   = 'localizer'
-  aItemName   = 'localizer_Identifier'
-  xItemName   = 'localizer_Identifier'
   a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
   x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
+  aItemName   = 'airport_Identifier'
+  xItemName   = 'airport_Identifier'
   listLine = ("ICAO: %s  " % tIcao )
   a424Row = ''
   try:
     with psycopg2.connect(**a424_config) as conn:
-      with conn.cursor() as cur:
+      with conn.cursor() as cLaCur:
         tQuery = "SELECT * FROM %s WHERE %s=\'%s\' " \
         % (a424_schTbl, aItemName, tIcao)
-        cur.execute(tQuery)
-        if (cur.rowcount == 0 ):
+        cLaCur.execute(tQuery)
+        if (cLaCur.rowcount == 0 ):
           if ( verbose > 0 ):
-            print("%s ID: %s Has Rowcount of %i " % \
-            ( a424Schem , navId, cur.rowcount))
+            print("cLOCs %s ID %s Has Rowcount of %i " % \
+            ( a424Schem , tIcao, cLaCur.rowcount))
           listLine = ( " %s aRowcount: %i " % \
-          (listLine, cur.rowcount ))
+          (listLine, cLaCur.rowcount ))
           a424Lati = 0
           a424Long = 0
           a424Freq =  ''
           a424Decl = 999
         else :
-          One ICAO may have multiple LOCs
-          a424Row = cur.fetchone()
+          # One ICAO may have multiple LOCs
+          a424Row = cLaCur.fetchone()
           while a424Row is not None :
             if ( verbose > 0 ):
-              print(a424Row)
+              print( 'cLOCs aRow:', a424Row)
             aNavId = a424Row[5]
             if (a424Row[10] == ''):
               if verbose :
-                print ( tNavId, "  a424Lati Blank")
+                print ( aNavId, "  a424Lati Blank")
               a424Lati = 99
             else :
               a424Lati = deciLati( a424Row[10])
             if (a424Row[11] == ''):
               if verbose :
-                print (tNavId, "  a424Long Blank")
+                print (aNavId, "  a424Long Blank")
               a424Long = 999
             else :
               a424Long = deciLong( a424Row[11])
-            x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
             a424Freq =         ( a424Row[8])
             if (verbose > 0) :
-              print ( "lat : %f  lon : %f" % \
-              ( (a424Lati), (a424Long)))
+              print ( "cLOCs a424 ID %s LOCLat: %f LOCLon: %f" % \
+              ( aNavId, a424Lati, a424Long))
+            #  
+            x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
             # check each LOC for GS or No GS and set x810 table
-            if     (t424Row[13] == '' ) :
+            if     (a424Row[13] == '' ) :
               # GS Lat Field Blank: Use x810 'No GS ' table below
-              xItemName = 'localizer_NoGS'
+              x810Table = 'localizer_NoGS'
             else :
-              xItemName = 'localizer'
+              x810Table = 'localizer'
             #
+            x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
+            xItemName   = 'Localizer_Identifier'
             try:
               with psycopg2.connect(**x810_config) as conn:
-                with conn.cursor() as cur:
+                with conn.cursor() as cLxCur:
                   tQuery = "SELECT * FROM %s WHERE %s=\'%s\' " \
                   % (x810_schTbl, xItemName, aNavId)
-                  cur.execute(tQuery)
-                  if not ( cur.rowcount == 1 ):
+                  cLxCur.execute(tQuery)
+                  if not ( cLxCur.rowcount == 1 ):
                     if ( verbose > 0 ):
                       print("%s ID: %s Has Rowcount of %i " % \
-                      ( x810Schem , navId, cur.rowcount))
+                      ( x810Schem , aNavId, cLxCur.rowcount))
                     listLine = ( " %s xRowcount: %i " % \
-                    (listLine, cur.rowcount ))
+                    (listLine, cLxCur.rowcount ))
                     x810Lati = 0
                     x810Long = 0
                     x810Freq =  ''
                     x810Decl = 999
                   else :
-                    x810Row = cur.fetchone()
+                    mismatch = 0
+                    listLine = ("LOC %s %s" % (a424Row[3], a424Row[5]))
+                    x810Row = cLxCur.fetchone()
                     if (verbose > 0) :
-                      print(x810Row)
+                      print('cLOCs xRow:',  x810Row)
                     if ( x810Row[1] == '' ):
-                      print ( tNavId, "  x810Lati Blank")
+                      print ( aNavId, "  x810Lati Blank")
                     if ( x810Row[2] == '' ):
-                      print ( tNavId, "  x810Long Blank")
+                      print ( aNavId, "  x810Long Blank")
                     x810Lati = float(x810Row[1])
                     x810Long = float(x810Row[2])
                     x810Freq =      ( x810Row[4])
                     diffLati = abs(x810Lati - a424Lati)
                     diffLong = abs(x810Long - a424Long)
                     if (verbose > 0) :
-                      print ( "lat : %f  lon : %f" % \
-                      ( (x810Lati), (x810Long)))
+                      print ( "cLOCs x810 ID %s LOCLat : %f  LOCLon : %f" % \
+                      ( aNavId, x810Lati, x810Long))
                       print ( "\nlat diff: %f  lon diff: %f" % \
                       ( diffLati, diffLong))
                     #
                     if ( (x810Freq == a424Freq) \
                     and (diffLati < 0.0001) and (diffLong < 0.0001) ) :
                       if (verbose > 0) :
-                        print (" %s Matches OK " % aNavId)
+                        print ("%s LOC Matches OK " % aNavId)
                     else :
-                      if (diffLati > 0.0001 )  :
-                        listLine = ( "%s aLati: %f  xLati: %f " % \
-                        (listLine, a424Lati, x810Lati ))
-                      if (diffLong > 0.0001 )  :
-                        listLine = ( "%s aLong: %f  xLong: %f " % \
-                        (listLine, a424Long, x810Long ))
+                      if ((diffLati > 0.0001 ) or (diffLong > 0.0001 )) :
+                        mismatch = 1
+                        listLine = ( "%s aLatLon: ll=%f,%f  xLatLon: ll=%f,%f " % \
+                        (listLine, a424Lati, a424Long, x810Lati, x810Long ))
                       if not (x810Freq == a424Freq) :
+                        mismatch = 1
                         listLine = ( "%s aFreq: %s  xFreq: %s " % \
                         (listLine, a424Freq, x810Freq ))
-                      if (verbose > 0) :
-                        print ("%s Mismatch %s " % (tNavId, listLine))
-                      #
-                      if listFlag :
-                        listHndl.write("%s\n" % listLine)
-                      if ( verbose > 0 ) :
-                        print( listLine)
-                      if (not( a424Row == '') and (navdFlag > 0)) :
+                      if ( mismatch > 0 ) :  
+                        if (verbose > 0) :
+                          print ("%s LOC Mismatch %s " % (aNavId, listLine))
+                        if listFlag :
+                          listHndl.write("%s\n" % listLine)
                         aLocToNavd ( a424Row, addnHndl)
-                        aGSToNavd ( a424Row, addnHndl)
                     #
-                    if not (t424Row[13] == '' ) :
-                      #tbd: Search x810 rowCode 6 for GS entry
-                      compGS(a424Row )
+                    if not (a424Row[13] == '' ) :
+                      #Search x810 rowCode 6 for GS entry
+                      compGS(a424Row, aNavId )
             except (Exception, psycopg2.DatabaseError) as error:
                 print(error)
-            a424Row = cur.fetchone()
+            a424Row = cLaCur.fetchone()
   except (Exception, psycopg2.DatabaseError) as error:
     print(error)
 
@@ -333,7 +419,7 @@ if __name__ == '__main__':
     print("  ")
     print(" Options :")
     print("   -h --help Print this help ")
-    print("   -i --id=  Compare arinc vs x810 for this single navId ( else compare all ")
+    print("   -a --airport=  Compare arinc vs x810 localizers for single airport ICAO ")
     print("   -l --list Append output for single id, rewrite output to xxx-list.txt ")
     print("   -n --navd Append output for single id, rewrite output to xxx-nav.dat ")
     print("   -t --type Specify 'loc or 'vhf' (default) for navdb table and 'xxx-' output ")
@@ -353,16 +439,11 @@ if __name__ == '__main__':
     print("  ")
   #
   else :
-    if (compType == 'loc') :
-      listPFId  = "./loc-mismatch.txt"
-      listPFId  = "./loc-list.txt"
-      addnPFId  = "./loc-nav.dat"
-      a424Table = 'loc_navaid'
-    else :
-      listPFId  = "./vhf-mismatch.txt"
-      listPFId  = "./vhf-list.txt"
-      addnPFId  = "./vhf-nav.dat"
-      a424Table = 'vhf_navaid'
+    listPFId  = "./loc-mismatch.txt"
+    listPFId  = "./loc-list.txt"
+    addnPFId  = "./loc-nav.dat"
+    a424Table = 'localizer'
+    addnHndl  = '' 
     #
     if compAll :
       listHndl  = open( listPFId, 'w' )
@@ -381,11 +462,8 @@ if __name__ == '__main__':
             print("rowcount: ", listCurs.rowcount)
             row = listCurs.fetchone()
             while row is not None:
-              navId = row[6]
-              if (compType == 'ndb') :
-                compNdbs(navId)
-              else :
-                compVhfs(navId)
+              Icao = row[3]
+              compLocs(Icao)
               #print(row)
               row = listCurs.fetchone()
       except (Exception, psycopg2.DatabaseError) as error:
@@ -397,8 +475,5 @@ if __name__ == '__main__':
         listHndl  = open( listPFId, 'a' )
       if (navdFlag > 0 ) :
         addnHndl  = open( listPFId, 'a' )
-      if (compType == 'ndb') :
-        compNdbs(navId)
-      else :
-        compVhfs(navId)
+      compLocs(Icao)
   #

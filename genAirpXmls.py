@@ -76,15 +76,28 @@ def mtr2ft ( tStr):
     tDeci  = (int(tStr) / ( 12 * 0.0254))
     return ( tDeci)
 
-def trueHdng( tStr):
-  global magnVari
-  tHdng = float(tStr[0:4]) / 10.0
+def magnHdng( tStr, magnDecl):
+  Hdng = float(tStr[0:4]) / 10.0
   if  ( len(tStr) < 5 ):
-    tHdng -= magnVari
+    return(tHdng)
   else:
-    if ( (tStr[4]) != 'T' ) :
-      tHdng -= magnVari
+    if (tStr[4] == 'T' ) :
+      return(Hdng - magnDecl)
+    else:   
+      return(999)
+
+def trueHdng( tStr, magnVari):
+  if  ( tStr[(len(tStr) - 1)] == 'T' ):
+    tHdng = float([(len(tStr) - 2)]) / 10.0
+  else:  
+    tHdng = float([(len(tStr) - 1)]) / 10.0  + magnDecl
   return(tHdng)
+
+def magnDecl( tStr) :
+  tDecl = float(tStr[1:]) / 10.0
+  if ( tStr[0] == 'W' ):
+    tDecl *= -1
+  return(tDecl)
 
 def get_magnVari( tIcao) :
   global Icao, magnVari, outpDirp, locsXmlOpen
@@ -112,7 +125,7 @@ def parseRway ( tRow) :
   if (mHdng == '') :
     tHdng = ''
   else:
-    tHdng = trueHdng( mHdng)
+    tHdng = trueHdng( mHdng, magnVari)
   tLati = tRow[10]
   dLati = deciLati( tLati)
   tLong = tRow[11]
@@ -147,7 +160,7 @@ def parseLocs ( tRow, xRway) :
   global Icao, magnVari, outpDirp, locsXmlOpen, thrsElvM
   locsRwy    = tRow[9][2:]
   locsNvId   = tRow[5]
-  locsHdgT   = trueHdng( tRow[12])
+  locsHdgT   = trueHdng( tRow[12], magnVari)
   locsLat    = deciLati( tRow[10])
   locsLon    = deciLong( tRow[11])
   locsElev   = thrsElvM
