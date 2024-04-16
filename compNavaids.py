@@ -2,7 +2,7 @@
 import psycopg2, getopt, sys
 from config import load_config
 
-global compAll, verbose, navId, showHelp
+global compAll, verbose, navId, wantHelp
 
 # fallback values
 navId     = 'LFV'
@@ -14,12 +14,12 @@ x810Schem = 'cyclexp810'
 navdFlag  = 0
 compAll  = 1
 compType = 'vhf'
-showHelp = 0
+wantHelp = 0
 listFlag = 1
 verbose  = 0
 #
 def normArgs(argv) :
-  global compAll, compType, verbose, navId, showHelp
+  global compAll, compType, verbose, navId, wantHelp
   # get args
   try:
     opts, args = getopt.getopt(argv, "hi:lnt:v", \
@@ -30,7 +30,7 @@ def normArgs(argv) :
   #
   for opt, arg in opts:
     if   opt in ('-h', "--help"):
-      showHelp = 1
+      wantHelp = 1
     if   opt in ("-i", "--id"):
       navId  = arg
       compAll  = 0
@@ -474,47 +474,51 @@ def compNdbs(tNavId):
               aNdbToNavd ( a424Row, addnHndl)
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
+#    
+
+def showHelp() :
+  progName = sys.argv[0]
+  print(" \n ")
+  print(" %s : Compare ARINC424 with Flightgear postgres databases " % progName )
+  print("  ")
+  print("Prerequ: ")
+  print("  Install PyARINC424 and build the ARINC242     postsegrsql database  ")
+  print("  Install PyNavdat   and build Flightgear xp810 postsegrsql database  ")
+  print("  ")
+  print("This python3 script accepts a single navaid ident or 'all navId's ")
+  print("  and compares arinc424 database contents with Flightgear's xp810 data ")
+  print("If Lat/Lon, Mag Declination difference exceeds thresold,       ")
+  print("  or key values, e.g. staion frequencies,  differ  ")
+  print("  then differences are noted in xxx-list.txt and entries are ")
+  print("  appended to xxx-nav.dat ")
+  print("  ")
+  print(" Options :")
+  print("   -h --help Print this help ")
+  print("   -i --id=  Compare arinc vs x810 for this single navId ( else compare all ")
+  print("   -l --list Append output for single id, rewrite output to xxx-list.txt ")
+  print("   -n --navd Append output for single id, rewrite output to xxx-nav.dat ")
+  print("   -t --type Specify 'ndb or 'vhf' (default) for navdb table and 'xxx-' output ")
+  print("   -v --verbose Log progress to console ")
+  print("  ")
+  print(" Example calls:")
+  print("   for Single NDB Id:  %s -i AMF -t n " %  progName)
+  print("   for Single VHF Id:  %s -i BRW -t v " %  progName)
+  print("   for All    NDB   :  %s        -t n " %  progName)
+  print("   for All    VHF Id:  %s        -t v " %  progName)
+  print("  ")
+  print(" Default:  Compare all vhf types  ")
+  print("  ")
+  print("Hint: To sort xxx-nav.dat into adds-nav.dat :   ")
+  print("  cat xxx-nav.dat  | sort -k1,1r -k9,9  > vhf-adds-nav.dat  ")
+  print("  ")
+  print("  ")
+#
 
 if __name__ == '__main__':
   normArgs(sys.argv[1:])
   #
-  if (showHelp > 0 ) :
-    progName = sys.argv[0]
-    print(" \n ")
-    print(" %s : Compare ARINC424 with Flightgear postgres databases " % progName )
-    print("  ")
-    print("Prerequ: ")
-    print("  Install PyARINC424 and build the ARINC242     postsegrsql database  ")
-    print("  Install PyNavdat   and build Flightgear xp810 postsegrsql database  ")
-    print("  ")
-    print("This python3 script accepts a single navaid ident or 'all navId's ")
-    print("  and compares arinc424 database contents with Flightgear's xp810 data ")
-    print("If Lat/Lon, Mag Declination difference exceeds thresold,       ")
-    print("  or key values, e.g. staion frequencies,  differ  ")
-    print("  then differences are noted in xxx-list.txt and entries are ")
-    print("  appended to xxx-nav.dat ")
-    print("  ")
-    print(" Options :")
-    print("   -h --help Print this help ")
-    print("   -i --id=  Compare arinc vs x810 for this single navId ( else compare all ")
-    print("   -l --list Append output for single id, rewrite output to xxx-list.txt ")
-    print("   -n --navd Append output for single id, rewrite output to xxx-nav.dat ")
-    print("   -t --type Specify 'ndb or 'vhf' (default) for navdb table and 'xxx-' output ")
-    print("   -v --verbose Log progress to console ")
-    print("  ")
-    print(" Example calls:")
-    print("   for Single NDB Id:  %s -i AMF -t n " %  progName)
-    print("   for Single VHF Id:  %s -i BRW -t v " %  progName)
-    print("   for All    NDB   :  %s        -t n " %  progName)
-    print("   for All    VHF Id:  %s        -t v " %  progName)
-    print("  ")
-    print(" Default:  Compare all vhf types  ")
-    print("  ")
-    print("Hint: To sort xxx-nav.dat into adds-nav.dat :   ")
-    print("  cat xxx-nav.dat  | sort -k1,1r -k9,9  > vhf-adds-nav.dat  ")
-    print("  ")
-    print("  ")
-  #
+  if (wantHelp > 0 ) :
+    showHelp()
   else :
     if (compType == 'ndb') :
       listPFId  = "./ndb-mismatch.txt"

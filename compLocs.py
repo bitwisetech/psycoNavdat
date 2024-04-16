@@ -2,7 +2,7 @@
 import psycopg2, getopt, sys
 from config import load_config
 
-global compAll, verbose, Icao, showHelp
+global compAll, verbose, Icao, wantHelp
 
 # fallback values
 Icao      = 'KATL'
@@ -15,12 +15,12 @@ x810Schem = 'cyclexp810'
 navdFlag  = 0
 compAll  = 1
 compType = 'loc'
-showHelp = 0
+wantHelp = 0
 listFlag = 1
 verbose  = 0
 #
 def normArgs(argv) :
-  global compAll, compType, verbose, Icao, showHelp, navdFlag
+  global compAll, compType, verbose, Icao, wantHelp, navdFlag
   # get args
   try:
     opts, args = getopt.getopt(argv, "a:hlnt:v", \
@@ -31,7 +31,7 @@ def normArgs(argv) :
   #
   for opt, arg in opts:
     if   opt in ('-h', "--help"):
-      showHelp = 1
+      wantHelp = 1
     if   opt in ("-a", "--airport"):
       Icao  = arg
       compAll  = 0
@@ -205,7 +205,7 @@ def compGS(a424Row, aNavId ) :
         GSxCur.execute(tQuery)
         if not ( GSxCur.rowcount == 1 ):
           if ( verbose > 0 ):
-            print(" compGS:  %s ID %s Has Rowcount of %i " % \
+            print(" compGS: %s ID %s x810 has Rowcount: %i " % \
             ( a424Schem , aNavId, GSxCur.rowcount))
           x810Lati = 0
           x810Long = 0
@@ -233,7 +233,7 @@ def compGS(a424Row, aNavId ) :
           x810Angl =      ( x810Row[6][0:4])
           x810Rway =      ( x810Row[10])
           #
-          listLine = ("GS %s %s" % (a424Row[3], a424Row[5]))
+          listLine = ("GS %s %s %s" % (a424Row[3], a424Row[5], a424Row[9]))
           mismatch = 0
           diffLati = abs(x810Lati - a424Lati)
           diffLong = abs(x810Long - a424Long)
@@ -289,7 +289,7 @@ def compLocs(tIcao):
         cLaCur.execute(tQuery)
         if (cLaCur.rowcount == 0 ):
           if ( verbose > 0 ):
-            print("cLOCs %s ID %s Has Rowcount of %i " % \
+            print("cLOCs %s ID %s a424 has Rowcount: %i " % \
             ( a424Schem , tIcao, cLaCur.rowcount))
           listLine = ( " %s aRowcount: %i " % \
           (listLine, cLaCur.rowcount ))
@@ -318,7 +318,7 @@ def compLocs(tIcao):
               a424Long = deciLong( a424Row[11])
             a424Freq =         ( a424Row[8])
             if (verbose > 0) :
-              print ( "cLOCs a424 ID %s LOCLat: %f LOCLon: %f" % \
+              print ( "cLOCs a424 ID %s LOC LatLon: ll=%f,%f" % \
               ( aNavId, a424Lati, a424Long))
             #
             x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
@@ -339,7 +339,7 @@ def compLocs(tIcao):
                   cLxCur.execute(tQuery)
                   if not ( cLxCur.rowcount == 1 ):
                     if ( verbose > 0 ):
-                      print("%s ID: %s Has Rowcount of %i " % \
+                      print("%s ID: %s x810 has Rowcount: %i " % \
                       ( x810Schem , aNavId, cLxCur.rowcount))
                     listLine = ( " %s xRowcount: %i " % \
                     (listLine, cLxCur.rowcount ))
@@ -349,7 +349,7 @@ def compLocs(tIcao):
                     x810Decl = 999
                   else :
                     mismatch = 0
-                    listLine = ("LOC %s %s" % (a424Row[3], a424Row[5]))
+                    #listLine = ("LOC %s %s %s " % (a424Row[3], a424Row[5], a424Row[9]))
                     x810Row = cLxCur.fetchone()
                     if (verbose > 0) :
                       print('cLOCs xRow:',  x810Row)
@@ -396,47 +396,51 @@ def compLocs(tIcao):
             a424Row = cLaCur.fetchone()
   except (Exception, psycopg2.DatabaseError) as error:
     print(error)
-
+  #  
+   
+def showHelp() :    
+  progName = sys.argv[0]
+  print(" \n ")
+  print(" %s : Compare ARINC424 with Flightgear postgres databases " % progName )
+  print("  ")
+  print("Prerequ: ")
+  print("  Install PyARINC424 and build the ARINC242     postsegrsql database  ")
+  print("  Install PyNavdat   and build Flightgear xp810 postsegrsql database  ")
+  print("  ")
+  print("This python3 script accepts a single navaid ident or 'all navId's ")
+  print("  and compares arinc424 database contents with Flightgear's xp810 data ")
+  print("If Lat/Lon, Mag Declination difference exceeds thresold,       ")
+  print("  or key values, e.g. staion frequencies,  differ  ")
+  print("  then differences are noted in xxx-list.txt and entries are ")
+  print("  appended to xxx-nav.dat ")
+  print("  ")
+  print(" Options :")
+  print("   -h --help Print this help ")
+  print("   -a --airport=  Compare arinc vs x810 localizers for single airport ICAO ")
+  print("   -l --list Append output for single id, rewrite output to xxx-list.txt ")
+  print("   -n --navd Append output for single id, rewrite output to xxx-nav.dat ")
+  print("   -t --type Specify 'loc or 'vhf' (default) for navdb table and 'xxx-' output ")
+  print("   -v --verbose Log progress to console ")
+  print("  ")
+  print(" Example calls:")
+  print("   for Single NDB Id:  %s -i AMF -t n " %  progName)
+  print("   for Single VHF Id:  %s -i BRW -t v " %  progName)
+  print("   for All    NDB   :  %s        -t n " %  progName)
+  print("   for All    VHF Id:  %s        -t v " %  progName)
+  print("  ")
+  print(" Default:  Compare all vhf types  ")
+  print("  ")
+  print("Hint: To sort xxx-nav.dat into adds-nav.dat :   ")
+  print("  cat xxx-nav.dat  | sort -k1,1r -k9,9  > vhf-adds-nav.dat  ")
+  print("  ")
+  print("  ")
+#
 
 if __name__ == '__main__':
   normArgs(sys.argv[1:])
   #
-  if (showHelp > 0 ) :
-    progName = sys.argv[0]
-    print(" \n ")
-    print(" %s : Compare ARINC424 with Flightgear postgres databases " % progName )
-    print("  ")
-    print("Prerequ: ")
-    print("  Install PyARINC424 and build the ARINC242     postsegrsql database  ")
-    print("  Install PyNavdat   and build Flightgear xp810 postsegrsql database  ")
-    print("  ")
-    print("This python3 script accepts a single navaid ident or 'all navId's ")
-    print("  and compares arinc424 database contents with Flightgear's xp810 data ")
-    print("If Lat/Lon, Mag Declination difference exceeds thresold,       ")
-    print("  or key values, e.g. staion frequencies,  differ  ")
-    print("  then differences are noted in xxx-list.txt and entries are ")
-    print("  appended to xxx-nav.dat ")
-    print("  ")
-    print(" Options :")
-    print("   -h --help Print this help ")
-    print("   -a --airport=  Compare arinc vs x810 localizers for single airport ICAO ")
-    print("   -l --list Append output for single id, rewrite output to xxx-list.txt ")
-    print("   -n --navd Append output for single id, rewrite output to xxx-nav.dat ")
-    print("   -t --type Specify 'loc or 'vhf' (default) for navdb table and 'xxx-' output ")
-    print("   -v --verbose Log progress to console ")
-    print("  ")
-    print(" Example calls:")
-    print("   for Single NDB Id:  %s -i AMF -t n " %  progName)
-    print("   for Single VHF Id:  %s -i BRW -t v " %  progName)
-    print("   for All    NDB   :  %s        -t n " %  progName)
-    print("   for All    VHF Id:  %s        -t v " %  progName)
-    print("  ")
-    print(" Default:  Compare all vhf types  ")
-    print("  ")
-    print("Hint: To sort xxx-nav.dat into adds-nav.dat :   ")
-    print("  cat xxx-nav.dat  | sort -k1,1r -k9,9  > vhf-adds-nav.dat  ")
-    print("  ")
-    print("  ")
+  if (wantHelp > 0 ) :
+    showHelp()
   #
   else :
     listPFId  = "./loc-mismatch.txt"

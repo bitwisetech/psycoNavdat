@@ -7,32 +7,25 @@ def normArgs(argv):
 # fallback values
   dbIniFId = "a424db.ini"
   cyclTabl = "cycle2403.localizer"
-  airpId = 'KDEN'
+  airpId = 'KMIA'
   wantHelp = 0
   # get args
   try:
-    opts, args = getopt.getopt(argv, "a:d:h", \
-      ["airpId=", "database="] )
+    opts, args = getopt.getopt(argv, "a:h", \
+      ["airpId=", "help"] )
   except getopt.GetoptError:
-     print ('sorry, args do not make sense ')
+     print ('sorry, args do not make sense (only ARINC has GS Altitiude entry) ')
      sys.exit(2)
   #
   for opt, arg in opts:
     if   opt in ("-a", "--airpId"):
       airpId  = arg
-    if   opt in ("-d", "--database"):
-      if ( arg == "x" ) :
-        dbIniFId = "x810db.ini"
-        cyclTabl = "cyclexp810.localizer"
-      if ( arg == "a" ) :
-        dbIniFId = "a424db.ini"
-        cyclTabl = "cycle2403.localizer"
     if opt in ('-h', "--help"):
       wantHelp = 1
   #
 #
 
-def get_airp():
+def get_ftAlt():
   """ Retrieve data from the localizers table """
   global airpId, dbIniFId, cyclTabl, wantHelp
   config  = load_config(filename=dbIniFId)
@@ -46,7 +39,10 @@ def get_airp():
         row = cur.fetchone()
 
         while row is not None:
-          print(row)
+          tIcao = row[3]
+          tIden = row[5]
+          tAlft = row[21]
+          print( "Icao: %s   LOC: %s  GS AltFtMSL: %s" % (tIcao, tIden, tAlft))
           row = cur.fetchone()
 
   except (Exception, psycopg2.DatabaseError) as error:
@@ -55,15 +51,14 @@ def get_airp():
 def showHelp() :
   progName = sys.argv[0]
   print("  ")
-  print(" %s : Query Airport entry in ARINC424 or Flightgear database " % progName )
+  print(" %s : Query GS Altitude entries in ARINC424 database " % progName )
   print("  ")
   print("Prerequ: ")
   print("  Install PyARINC424 and build the ARINC242     postsegrsql database  ")
   print("  Install PyNavdat   and build Flightgear xp810 postsegrsql database  ")
   print("  ")
   print("Arguments:")
-  print("  -d --database= 'a' | 'x' Query ARINC424 (default) | Flightgear X810 ")
-  print("  -a --airpId=       Ident ( default KDEN ) of Airport")
+  print("  -a --airpId=       Ident ( default KDEN ) of Airport for all Rwys")
   print("  ")
 #
 
@@ -73,4 +68,4 @@ if __name__ == '__main__':
   if (wantHelp > 0 ) :
     showHelp()
   print( "Query %s in %s database: " % ( airpId, dbIniFId[0:4]))
-  get_airp()
+  get_ftAlt()        
