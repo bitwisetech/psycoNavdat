@@ -88,9 +88,9 @@ def magnHdng( tStr, magnDecl):
 
 def trueHdng( tStr, magnVari):
   if  ( tStr[(len(tStr) - 1)] == 'T' ):
-    tHdng = float([(len(tStr) - 2)]) / 10.0
+    tHdng = float(tStr[0:(len(tStr) - 2)]) / 10.0
   else:
-    tHdng = float([(len(tStr) - 1)]) / 10.0  + magnDecl
+    tHdng = float(tStr[0:(len(tStr) - 1)]) / 10.0  + magnVari
   return(tHdng)
 
 def magnDecl( tStr) :
@@ -412,7 +412,7 @@ if __name__ == '__main__':
     except (Exception, psycopg2.DatabaseError) as error:
       print(error)
     # nav.dat needs header and footer; NavData is placed next to Airports folder
-    nvdbPFId = ( outpDirp + '/../NavData/nav/addins-nav.dat' )
+    nvdbPFId = ( outpDirp + '/NavData/nav/addins-nav.dat' )
     nvdbHndl = open( nvdbPFId, 'a' )
     #
     if (cifsAll > 0 ) :
