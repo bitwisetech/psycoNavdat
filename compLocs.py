@@ -2,10 +2,10 @@
 import psycopg2, getopt, sys
 from config import load_config
 
-global compAll, verbose, Icao, wantHelp
+global compAll, verbose, a424Icao, wantHelp
 
 # fallback values
-Icao      = 'KATL'
+a424Icao  = 'KATL'
 navId     = 'LFV'
 a424ini   = "a424db.ini"
 x810ini   = "x810db.ini"
@@ -20,7 +20,7 @@ logfFlag = 1
 verbose  = 0
 #
 def normArgs(argv) :
-  global compAll, compType, verbose, Icao, wantHelp, navdFlag
+  global compAll, compType, verbose, a424Icao, wantHelp, navdFlag
   # get args
   try:
     opts, args = getopt.getopt(argv, "a:hlnt:v", \
@@ -33,7 +33,7 @@ def normArgs(argv) :
     if   opt in ('-h', "--help"):
       wantHelp = 1
     if   opt in ("-a", "--airport"):
-      Icao  = arg
+      a424Icao  = arg
       compAll  = 0
     if   opt in ("-l", "--logf"):
       logfFlag = 1
@@ -281,26 +281,19 @@ def compLocs(tIcao):
   a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
   x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
   aItemName   = 'airport_Identifier'
-  xItemName   = 'airport_Identifier'
-  logfLine = ("LOC %s " % tIcao)
+  xItemName   = 'Airport_Identifier'
   a424Row = ''
+  if ( tIcao == 'All') : 
+    tQuery = "SELECT * FROM %s WHERE %s LIKE '%%'" \
+    % (a424_schTbl, aItemName)
+  else : 
+    tQuery = "SELECT * FROM %s WHERE %s=\'%s\' " \
+    % (a424_schTbl, aItemName, tIcao)
   try:
     with psycopg2.connect(**a424_config) as conn:
       with conn.cursor() as cLaCur:
-        tQuery = "SELECT * FROM %s WHERE %s=\'%s\' " \
-        % (a424_schTbl, aItemName, tIcao)
         cLaCur.execute(tQuery)
-        if (cLaCur.rowcount == 0 ):
-          if ( verbose > 0 ):
-            print("cLOCs %s ID %s a424 has Rowcount: %i " % \
-            ( a424Schem , tIcao, cLaCur.rowcount))
-          logfLine = ( "%s aRowcount: %i " % \
-          (logfLine, cLaCur.rowcount ))
-          a424Lati = 0
-          a424Long = 0
-          a424Freq =  ''
-          a424Decl = 999
-        else :
+        if not (cLaCur.rowcount == 0 ):
           # One ICAO may have multiple LOCs
           a424Row = cLaCur.fetchone()
           while a424Row is not None :
@@ -309,6 +302,7 @@ def compLocs(tIcao):
             a424Icao = a424Row[3]
             a424Loci = a424Row[5]
             a424Rway = a424Row[9]
+            logfLine = ("LOC %s " % a424Icao)
             if (a424Row[10] == ''):
               if verbose :
                 print ( a424Loci, "  a424Lati Blank")
@@ -340,7 +334,7 @@ def compLocs(tIcao):
               with psycopg2.connect(**x810_config) as conn:
                 with conn.cursor() as cLxCur:
                   tQuery = "SELECT * FROM %s WHERE (Airport_Identifier=\'%s\') AND (%s=\'%s\') " \
-                  % (x810_schTbl, tIcao, xItemName, a424Loci)
+                  % (x810_schTbl, a424Icao, xItemName, a424Loci)
                   cLxCur.execute(tQuery)
                   if not ( cLxCur.rowcount == 1 ):
                     if ( verbose > 0 ):
@@ -454,34 +448,17 @@ if __name__ == '__main__':
     addnHndl  = ''
     #
     if compAll :
-      logfHndl  = open( logfPFId, 'w' )
-      addnHndl  = open( addnPFId, 'w' )
-      logfFlag  = 1
-      navdFlag   = 1
-      #
-      a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
-      a424_config  = load_config(filename=a424ini)
-      try:
-        with psycopg2.connect(**a424_config) as a424Conn:
-          with a424Conn.cursor() as a424Curs:
-            a424Query = "SELECT * FROM %s " \
-            % (a424_schTbl)
-            a424Curs.execute(a424Query)
-            print("rowcount: ", a424Curs.rowcount)
-            row = a424Curs.fetchone()
-            while row is not None:
-              Icao = row[3]
-              compLocs(Icao)
-              #print(row)
-              row = a424Curs.fetchone()
-      except (Exception, psycopg2.DatabaseError) as error:
-          print(error)
+      logfFlag = 1
+      navdFlag = 1
+      a424Icao = 'All'
+    if (logfFlag > 0 ) :
+      logfHndl  = open( logfPFId, 'a' )
+    if (navdFlag > 0 ) :
+      addnHndl  = open( addnPFId, 'a' )
+    compLocs(a424Icao)
+    #
+    if (logfFlag > 0 ) :
       logfHndl.close()
+    if (navdFlag > 0 ) :
       addnHndl.close()
-    else:
-      if (logfFlag > 0 ) :
-        logfHndl  = open( logfPFId, 'a' )
-      if (navdFlag > 0 ) :
-        addnHndl  = open( addnPFId, 'a' )
-      compLocs(Icao)
   #
