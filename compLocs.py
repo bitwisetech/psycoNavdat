@@ -284,10 +284,10 @@ def compLocs(tIcao):
   xItemName   = 'Airport_Identifier'
   a424Row = ''
   if ( tIcao == 'All') : 
-    tQuery = "SELECT * FROM %s WHERE %s LIKE '%%'" \
+    tQuery = "SELECT * FROM %s WHERE Subsection_Code = 'I' AND %s LIKE '%%'" \
     % (a424_schTbl, aItemName)
   else : 
-    tQuery = "SELECT * FROM %s WHERE %s=\'%s\' " \
+    tQuery = "SELECT * FROM %s WHERE Subsection_Code = 'I' AND %s=\'%s\' " \
     % (a424_schTbl, aItemName, tIcao)
   try:
     with psycopg2.connect(**a424_config) as conn:
