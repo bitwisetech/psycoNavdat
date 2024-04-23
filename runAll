@@ -1,0 +1,16 @@
+#!/bin/sh
+echo " "
+read -n1 -r -p "$0 in $PWD will append to nav.dat, spec, logf .txt OK ?? ( AnyKey or Ctl-C)"
+echo " "
+./compNavaids.py  -ln -t ndb
+./compNavaids.py  -ln
+./compLocs.py     -ln -s loc-spec.txt
+cat loc-nav.dat    | sort -k 1,1  -k9,9 > locs-nav.dat
+cat loc-logf.txt   | sort -k 1,1  -k9,9 > locs-logf.txt
+cat loc-spec.txt   | sort -k 1,1        > locs-spec.txt
+cat vhf-nav.dat    | sort -k 1,1r -k9,9 > vhfs-nav.dat
+cat vhf-logf.txt   | sort -k 1,1 -k9,9  > vhfs-logf.txt
+cat ndb-nav.dat    | sort -k 1,1  -k9,9 > ndbs-nav.dat
+cat ndb-logf.txt   | sort -k 1,1  -k9,9 > ndbs-logf.txt
+
+

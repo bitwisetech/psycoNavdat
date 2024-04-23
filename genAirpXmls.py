@@ -80,15 +80,20 @@ def magnHdng( tStr, magnDecl):
     return(tHdng)
   else:
     if (tStr[4] == 'T' ) :
-      return(Hdng - magnDecl)
+      mHdng = (Hdng - magnDecl)
+      while ( mHdng < 0 ) :
+        mHdng += 360
+      return (mHdng)
     else:
       return(999)
 
 def trueHdng( tStr, magnVari):
   if  ( tStr[(len(tStr) - 1)] == 'T' ):
-    tHdng = float(tStr[0:(len(tStr) - 2)]) / 10.0
+    tHdng = float(tStr[0:(len(tStr) - 1)]) / 10.0
   else:
-    tHdng = float(tStr[0:(len(tStr) - 1)]) / 10.0  + magnVari
+    tHdng = float(tStr[0:(len(tStr)    )]) / 10.0  + magnVari
+  while ( tHdng < 0 ) :
+    tHdng += 360  
   return(tHdng)
 
 def magnDecl( tStr) :

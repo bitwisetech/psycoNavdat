@@ -87,15 +87,20 @@ def magnHdng( tStr, magnDecl):
     return(tHdng)
   else:
     if (tStr[4] == 'T' ) :
-      return(Hdng - magnDecl)
+      mHdng = (Hdng - magnDecl)
+      while ( mHdng < 0 ) :
+        mHdng += 360
+      return (mHdng)
     else:
       return(999)
 
 def trueHdng( tStr, magnVari):
   if  ( tStr[(len(tStr) - 1)] == 'T' ):
-    tHdng = float(tStr[0:(len(tStr) - 2)]) / 10.0
+    tHdng = float(tStr[0:(len(tStr) - 1)]) / 10.0
   else:
-    tHdng = float(tStr[0:(len(tStr) - 1)]) / 10.0  + magnVari
+    tHdng = float(tStr[0:(len(tStr)    )]) / 10.0  + magnVari
+  while ( tHdng < 0 ) :
+    tHdng += 360  
   return(tHdng)
 
 def magnDecl( tStr) :
@@ -111,16 +116,16 @@ def aLocToNavd ( LTN_aRow, navdatHndl) :
   aCatg = LTN_aRow[6]
   if (aSect == 'P') :
     if not (LTN_aRow[10] == '' ) :
-      navdLati = ( "%-02.8f" % (deciLati( LTN_aRow[10]))).rjust(12, ' ')
+      navdLati = ( '%011.8f' % (deciLati( LTN_aRow[10]))).rjust(12, ' ')
     if not (LTN_aRow[11] == '' ) :
-      navdLong = ( "%-03.8f" % (deciLong( LTN_aRow[11]))).rjust(13, ' ')
+      navdLong = ( '%013.8f' % (deciLong( LTN_aRow[11]))).rjust(13, ' ')
     if not (LTN_aRow[21] == '' ) :
       navdElev = ( "%6i"  % int(LTN_aRow[21])).rjust( 6, ' ')
     else :
       navdElev = '     0'
     navdDecl = magnDecl(LTN_aRow[20])
     trueBrng = trueHdng( LTN_aRow[12],  navdDecl )
-    navdBngT = ( "%3.3f" % trueBrng).rjust(11)
+    navdBngT = ( "%07.3f" % trueBrng).rjust(11)
     navdFreq = (LTN_aRow[8][0:5]).rjust( 5, ' ')
     navdIden = LTN_aRow[5].ljust( 4, ' ')
     navdIcao = LTN_aRow[3].ljust( 4, ' ')
@@ -172,13 +177,15 @@ def aGSToNavd ( GTN_aRow, navdatHndl) :
   if not (GTN_aRow[13] == '' ) :
     # GS: RCode, Lat, Lon, ElFt, Freq, Rnge, Angl+Brng, Id, Icao, Rwy, Name
     navdCode =  '6'
-    navdLati = ( "%-02.8f" % (deciLati(GTN_aRow[13]))).rjust(12, ' ')
-    navdLong = ( "%-03.8f" % (deciLong(GTN_aRow[14]))).rjust(13, ' ')
+    navdLati = ( '%011.8f' % (deciLati(GTN_aRow[13]))).rjust(12, ' ')
+    navdLong = ( '%013.8f' % (deciLong(GTN_aRow[14]))).rjust(13, ' ')
     navdElev = ( "%i"      % int(GTN_aRow[22])).rjust( 6, ' ')
     navdFreq = (GTN_aRow[8][0:5]).rjust( 5, ' ')
     navdRnge = ' 10'
     navdAngl = GTN_aRow[19].rjust( 3, ' ')
-    navdBngT = ( "%3.3f" % (int( GTN_aRow[12])/10.0)).rjust(7)
+    navdDecl = magnDecl(GTN_aRow[20])
+    trueBrng = trueHdng( GTN_aRow[12],  navdDecl )
+    navdBngT = ( "%07.3f" % trueBrng).rjust(7)
     navdIden = GTN_aRow[5].ljust( 4, ' ')
     navdIcao = GTN_aRow[3].ljust( 4, ' ')
     navdRway = GTN_aRow[9][2:].ljust(3)
@@ -455,9 +462,9 @@ if __name__ == '__main__':
       navdFlag = 1
       a424Icao = 'All'
     if (logfFlag > 0 ) :
-      logfHndl  = open( logfPFId, 'a' )
+      logfHndl  = open( logfPFId, 'w' )
     if (navdFlag > 0 ) :
-      addnHndl  = open( addnPFId, 'a' )
+      addnHndl  = open( addnPFId, 'w' )
     if (specFlag > 0 ) :
       specHndl  = open( specFile, 'w' )
     compLocs(a424Icao)
