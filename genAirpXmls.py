@@ -229,7 +229,7 @@ def millRwys(tIcao, tLocId, sameIcao):
     # Pull all Rways for given A/P
     tQuery = "SELECT * FROM cycle2403.runway  \
               WHERE  Airport_Identifier='%s'" % tIcao
-  else :             
+  else :
     tQuery = "SELECT * FROM cycle2403.runway  \
               WHERE Airport_Identifier='%s' AND LOC__MLS__GLS_Identifier = '%s'" % \
               (tIcao, tLocId )
@@ -445,7 +445,7 @@ if __name__ == '__main__':
             else :
               sameIcao = 0
               prevIcao = specIcao
-              #  
+              #
               if ( len(specList) > 1 ) :
                 specLocId = specList[1]
               else :
@@ -453,7 +453,7 @@ if __name__ == '__main__':
               print(specIcao)
               get_magnVari(specIcao)
               millRwys(specIcao, '', sameIcao)
-        specHndl.close()    
+        specHndl.close()
       else :
         # Single query
         print(argsIcao)

@@ -17,7 +17,7 @@ compAll  = 1
 wantHelp = 0
 logfFlag = 1
 specFlag = 1
-specFile = 'locsSpec.txt'
+specFile = 'locs-spec.txt'
 verbose  = 0
 #
 def normArgs(argv) :
@@ -41,7 +41,7 @@ def normArgs(argv) :
     if   opt in ("-n", "--navd"):
       navdFlag  = 1
     if   opt in ("-s", "--specFile"):
-      specFlAG = 1
+      specFlag = 1
       specFile = arg
     if   opt in ("-v", "--verbose"):
       verbose = 1
@@ -287,10 +287,10 @@ def compLocs(tIcao):
   aItemName   = 'Airport_Identifier'
   xItemName   = 'Airport_Identifier'
   a424Row = ''
-  if ( tIcao == 'All') : 
+  if ( tIcao == 'All') :
     tQuery = "SELECT * FROM %s WHERE Subsection_Code = 'I' AND %s LIKE '%%'" \
     % (a424_schTbl, aItemName)
-  else : 
+  else :
     tQuery = "SELECT * FROM %s WHERE Subsection_Code = 'I' AND %s=\'%s\' " \
     % (a424_schTbl, aItemName, tIcao)
   try:
@@ -401,9 +401,9 @@ def compLocs(tIcao):
             a424Row = cLaCur.fetchone()
   except (Exception, psycopg2.DatabaseError) as error:
     print(error)
-  #  
-   
-def showHelp() :    
+  #
+
+def showHelp() :
   progName = sys.argv[0]
   print(" \n ")
   print(" %s : Compare ARINC424 with Flightgear postgres databases " % progName )
