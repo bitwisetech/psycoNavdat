@@ -385,6 +385,7 @@ def compLocs(tIcao):
                         logfLine = ( "%s aFreq: %s  xFreq: %s " % \
                         (logfLine, a424Freq, x810Freq ))
                       if ( mismatch > 0 ) :
+                        print ("%s " % (a424Icao))
                         if (verbose > 0) :
                           print ("%s LOC Mismatch %s " % (a424Loci, logfLine))
                         if logfFlag :

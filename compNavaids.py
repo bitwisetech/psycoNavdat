@@ -15,7 +15,7 @@ navdFlag  = 0
 compAll  = 1
 compType = 'vhf'
 wantHelp = 0
-listFlag = 1
+logfFlag = 1
 verbose  = 0
 #
 def normArgs(argv) :
@@ -23,7 +23,7 @@ def normArgs(argv) :
   # get args
   try:
     opts, args = getopt.getopt(argv, "hi:lnt:v", \
-      ["help", "id=", "list",  "type=", "verbose" ] )
+      ["help", "id=", "logf",  "type=", "verbose" ] )
   except getopt.GetoptError:
      print ('sorry, args do not make sense ')
      sys.exit(2)
@@ -34,8 +34,8 @@ def normArgs(argv) :
     if   opt in ("-i", "--id"):
       navId  = arg
       compAll  = 0
-    if   opt in ("-l", "--list"):
-      listFlag = 1
+    if   opt in ("-l", "--logf"):
+      logfFlag = 1
     if   opt in ("-n", "--navd"):
       navdFlag  = 1
     if   opt in ("-t", "--type"):
@@ -200,7 +200,7 @@ def compVhfs(tNavId):
   xItemName   = 'vor_Identifier'
   a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
   x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
-  listLine = ("ID: %s  " % tNavId )
+  logfLine = ("ID: %s  " % tNavId )
   a424Row = ''
   try:
     with psycopg2.connect(**a424_config) as conn:
@@ -212,8 +212,8 @@ def compVhfs(tNavId):
           if ( verbose > 0 ):
             print("%s ID: %s Has Rowcount of %i " % \
             ( a424Schem , navId, cur.rowcount))
-          listLine = ( " %s aRowcount: %i " % \
-          (listLine, cur.rowcount ))
+          logfLine = ( " %s aRowcount: %i " % \
+          (logfLine, cur.rowcount ))
           a424Lati = 0
           a424Long = 0
           a424Freq =  ''
@@ -261,15 +261,15 @@ def compVhfs(tNavId):
           if ( verbose > 0 ):
             print("%s ID: %s Has Rowcount of %i " % \
             ( x810Schem , navId, cur.rowcount))
-          listLine = ( " %s xRowcount: %i " % \
-          (listLine, cur.rowcount ))
+          logfLine = ( " %s xRowcount: %i " % \
+          (logfLine, cur.rowcount ))
           x810Lati = 0
           x810Long = 0
           x810Freq =  ''
           x810Decl = 999
         else :
           mismatch = 0
-          listLine = ("VHF %s %s" % (a424Row[5], a424Row[6]))
+          logfLine = ("VHF %s %s" % (a424Row[5], a424Row[6]))
           x810Row = cur.fetchone()
           if (verbose > 0) :
             print(x810Row)
@@ -296,22 +296,23 @@ def compVhfs(tNavId):
           else :
             if ((diffLati > 0.0001 ) or (diffLong > 0.0001 ) ) :
               mismatch = 1
-              listLine = ( "%s aLatLon: ll=%f,%f  xLatLon: ll=%f,%f " % \
-              (listLine, a424Lati, a424Long, x810Lati, x810Long ))
+              logfLine = ( "%s aLatLon: ll=%f,%f  xLatLon: ll=%f,%f " % \
+              (logfLine, a424Lati, a424Long, x810Lati, x810Long ))
             if not (x810Freq == a424Freq) :
               mismatch = 1
-              listLine = ( "%s aFreq: %s  xFreq: %s " % \
-              (listLine, a424Freq, x810Freq ))
+              logfLine = ( "%s aFreq: %s  xFreq: %s " % \
+              (logfLine, a424Freq, x810Freq ))
             if (a424Decl != x810Decl)  :
               mismatch = 1
-              listLine = ( "%s aDecl: %f  xDecl: %f " % \
-              (listLine, a424Decl, x810Decl))
+              logfLine = ( "%s aDecl: %f  xDecl: %f " % \
+              (logfLine, a424Decl, x810Decl))
             if (mismatch > 0) :
+              print ("%s " % (tNavId))
               if (verbose > 0) :
-                print ("%s Mismatch %s " % (tNavId, listLine))
+                print ("%s Mismatch %s " % (tNavId, logfLine))
               #
-              if listFlag :
-                listHndl.write("%s\n" % listLine)
+              if logfFlag :
+                logfHndl.write("%s\n" % logfLine)
               aVhfToNavd ( a424Row, addnHndl)
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
@@ -363,7 +364,7 @@ def compNdbs(tNavId):
   xItemName   = 'NDB_Identifier'
   a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
   x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
-  listLine = ("ID: %s  " % tNavId )
+  logfLine = ("ID: %s  " % tNavId )
   a424Row = ''
   try:
     with psycopg2.connect(**a424_config) as conn:
@@ -375,8 +376,8 @@ def compNdbs(tNavId):
           if ( verbose > 0 ):
             print("%s ID: %s Has Rowcount of %i " % \
             ( a424Schem , navId, cur.rowcount))
-          listLine = ( " %s aRowcount: %i " % \
-          (listLine, cur.rowcount ))
+          logfLine = ( " %s aRowcount: %i " % \
+          (logfLine, cur.rowcount ))
           a424Lati = 0
           a424Long = 0
           a424Freq =  ''
@@ -424,14 +425,14 @@ def compNdbs(tNavId):
           if ( verbose > 0 ):
             print("%s ID: %s Has Rowcount of %i " % \
             ( x810Schem , navId, cur.rowcount))
-          listLine = ( " %s xRowcount: %i " % \
-          (listLine, cur.rowcount ))
+          logfLine = ( " %s xRowcount: %i " % \
+          (logfLine, cur.rowcount ))
           x810Lati = 0
           x810Long = 0
           x810Freq =  ''
         else :
           mismatch = 0
-          listLine = ("NDB %s %s" % (a424Row[5], a424Row[6]))
+          logfLine = ("NDB %s %s" % (a424Row[5], a424Row[6]))
           x810Row = cur.fetchone()
           if (verbose > 0) :
             print(x810Row)
@@ -457,20 +458,21 @@ def compNdbs(tNavId):
           else :
             if ((diffLati > 0.0001 ) or (diffLong > 0.0001 ) ) :
               mismatch = 1
-              listLine = ( "%s aLatLon: ll=%f,%f  xLatLon: ll=%f,%f " % \
-              (listLine, a424Lati, a424Long, x810Lati, x810Long ))
+              logfLine = ( "%s aLatLon: ll=%f,%f  xLatLon: ll=%f,%f " % \
+              (logfLine, a424Lati, a424Long, x810Lati, x810Long ))
             if not (x810Freq == a424Freq) :
               mismatch = 1
-              listLine = ( "%s aFreq: %s  xFreq: %s " % \
-              (listLine, a424Freq, x810Freq ))
+              logfLine = ( "%s aFreq: %s  xFreq: %s " % \
+              (logfLine, a424Freq, x810Freq ))
             if (verbose > 0) :
-              print ("%s Mismatch %s " % (tNavId, listLine))
+              print ("%s Mismatch %s " % (tNavId, logfLine))
             #
             if (mismatch > 0) :
-              if listFlag :
-                listHndl.write("%s\n" % listLine)
+              print ("%s " % (tNavId))
+              if logfFlag :
+                logfHndl.write("%s\n" % logfLine)
               if ( verbose > 0 ) :
-                print( listLine)
+                print( logfLine)
               aNdbToNavd ( a424Row, addnHndl)
   except (Exception, psycopg2.DatabaseError) as error:
       print(error)
@@ -489,13 +491,13 @@ def showHelp() :
   print("  and compares arinc424 database contents with Flightgear's xp810 data ")
   print("If Lat/Lon, Mag Declination difference exceeds thresold,       ")
   print("  or key values, e.g. staion frequencies,  differ  ")
-  print("  then differences are noted in xxx-list.txt and entries are ")
+  print("  then differences are noted in xxx-logf.txt and entries are ")
   print("  appended to xxx-nav.dat ")
   print("  ")
   print(" Options :")
   print("   -h --help Print this help ")
   print("   -i --id=  Compare arinc vs x810 for this single navId ( else compare all ")
-  print("   -l --list Append output for single id, rewrite output to xxx-list.txt ")
+  print("   -l --logf Append output for single id, rewrite output to xxx-logf.txt ")
   print("   -n --navd Append output for single id, rewrite output to xxx-nav.dat ")
   print("   -t --type Specify 'ndb or 'vhf' (default) for navdb table and 'xxx-' output ")
   print("   -v --verbose Log progress to console ")
@@ -521,20 +523,18 @@ if __name__ == '__main__':
     showHelp()
   else :
     if (compType == 'ndb') :
-      listPFId  = "./ndb-mismatch.txt"
-      listPFId  = "./ndb-list.txt"
+      logfPFId  = "./ndb-logf.txt"
       addnPFId  = "./ndb-nav.dat"
       a424Table = 'ndb_navaid'
     else :
-      listPFId  = "./vhf-mismatch.txt"
-      listPFId  = "./vhf-list.txt"
+      logfPFId  = "./vhf-logf.txt"
       addnPFId  = "./vhf-nav.dat"
       a424Table = 'vhf_navaid'
     #
     if compAll :
-      listHndl  = open( listPFId, 'w' )
+      logfHndl  = open( logfPFId, 'w' )
       addnHndl  = open( addnPFId, 'w' )
-      listFlag  = 1
+      logfFlag  = 1
       navdFlag   = 1
       #
       a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
@@ -553,17 +553,16 @@ if __name__ == '__main__':
                 compNdbs(navId)
               else :
                 compVhfs(navId)
-              #print(row)
               row = listCurs.fetchone()
       except (Exception, psycopg2.DatabaseError) as error:
           print(error)
-      listHndl.close()
+      logfHndl.close()
       addnHndl.close()
     else:
-      if (listFlag > 0 ) :
-        listHndl  = open( listPFId, 'a' )
+      if (logfFlag > 0 ) :
+        logfHndl  = open( logfPFId, 'a' )
       if (navdFlag > 0 ) :
-        addnHndl  = open( listPFId, 'a' )
+        addnHndl  = open( addnPFId, 'a' )
       if (compType == 'ndb') :
         compNdbs(navId)
       else :
