@@ -46,7 +46,7 @@ def get_ftAlt():
           row = cur.fetchone()
 
   except (Exception, psycopg2.DatabaseError) as error:
-      print(error)
+    print(error)
 
 def showHelp() :
   progName = sys.argv[0]

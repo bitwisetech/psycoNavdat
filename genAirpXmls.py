@@ -3,39 +3,37 @@ import psycopg2, getopt, os, sys
 
 
 def normArgs(argv):
-  global Icao, magnVari, locsXmlOpen
-  global cifsAll, fldrTree, multiPass, outpDirp, specPFid, verbose, showHelp
+  global argsIcao, magnVari
+  global cifsAll, fldrTree, thldTree, outpDirp, specPFId, verbose, showHelp
 # fallback values
-  Icao      = 'KATL'
+  argsIcao      = 'KATL'
   magnVari  =  6.00
-  outpDirp  = '/data/Airports'
-  specPFid  = './listIcao.txt'
+  outpDirp  = './Airports'
+  specPFId  = ''
   cifsAll   = 0
   fldrTree  = 0
-  multiPass = 0
   verbose   = 0
   showHelp  = 0
   # get args
   try:
-    opts, args = getopt.getopt(argv, "a:chmo:s:tv", \
-      ["airport=", "cifsAll", "help", "multiPass",  "outpPath=" , "specFile=", "--tree", "--verbose" ] )
+    opts, args = getopt.getopt(argv, "a:cho:s:tv", \
+      ["airport=", "cifsAll", "help",  "outpPath=" , "specFile=", "--tree", "--verbose" ] )
   except getopt.GetoptError:
      print ('sorry, args do not make sense ')
      sys.exit(2)
   #
   for opt, arg in opts:
     if   opt in ('-a', "--airport"):
-      Icao  = arg
+      argsIcao  = arg
+      cifsAll = 0
     if   opt in ('-c', "--cifsAll"):
       cifsAll = 1
     if   opt in ('-h', "--help"):
       showHelp = 1
-    if   opt in ('-m', "--multiPass"):
-      multiPass = 1
-    if   opt in ("-o", "--outpPath"):
+    if   opt in ("-o", "--outPath"):
       outpDirp  = arg
     if   opt in ("-s", "--specFile"):
-      specPFid  = arg
+      specPFId  = arg
     if   opt in ('-t', "--tree"):
       fldrTree = 1
     if   opt in ('-v', "--verbose"):
@@ -100,7 +98,7 @@ def magnDecl( tStr) :
   return(tDecl)
 
 def get_magnVari( tIcao) :
-  global Icao, magnVari, outpDirp, locsXmlOpen
+  global argsIcao, magnVari, outpDirp
   with dbConn.cursor() as cur:
     # query airport table for Mag Variation
     tQuery = "SELECT * FROM cycle2403.airport \
@@ -118,8 +116,8 @@ def get_magnVari( tIcao) :
       magnVari = tMagVar
 
 def parseRway ( tRow) :
-  global Icao, magnVari, outpDirp, nvdbHndl, locsXmlOpen, thrsElvM
-  global xThlds, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
+  global argsIcao, magnVari, outpDirp, nvdbHndl, thrsElvM, sameIcao
+  global locsProp, xThlds, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
   tIden = tRow[6][2: ]
   mHdng = tRow[9]
   if (mHdng == '') :
@@ -157,7 +155,7 @@ def parseRway ( tRow) :
     (tIden, tHdng, dLati, dLong, mDisp, mStop))
 
 def parseLocs ( tRow, xRway) :
-  global Icao, magnVari, outpDirp, locsXmlOpen, thrsElvM
+  global locsProp, xThlds, argsIcao, magnVari, outpDirp, thrsElvM, sameIcao
   locsRwy    = tRow[9][2:]
   locsNvId   = tRow[5]
   locsHdgT   = trueHdng( tRow[12], magnVari)
@@ -217,27 +215,31 @@ def parseLocs ( tRow, xRway) :
       print( nvGSLine)
     nvdbHndl.write( nvGSLine)
 
-def mill_rwys(tIcao):
+def millRwys(tIcao, tLocId, sameIcao):
   """ Retrieve data from database runway table """
-  global magnVari, outpDirp, locsXmlOpen
-  global xThlds, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
+  global magnVari, outpDirp
+  global locsProp, xThlds, thldTree, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
   rwysDone = []
   locsPropOpen = 0
   locsRwayOpen = 0
-  config   = load_config()
-  xThlds = etree.Element("PropertyList")
-  # Pull all Rways for given A/P
-  rwayIcao = ''
+  config       = load_config()
+  if not sameIcao :
+    xThlds       = etree.Element("PropertyList")
+  if ( tLocId == '') :
+    # Pull all Rways for given A/P
+    tQuery = "SELECT * FROM cycle2403.runway  \
+              WHERE  Airport_Identifier='%s'" % tIcao
+  else :             
+    tQuery = "SELECT * FROM cycle2403.runway  \
+              WHERE Airport_Identifier='%s' AND LOC__MLS__GLS_Identifier = '%s'" % \
+              (tIcao, tLocId )
   with dbConn.cursor() as cur:
     # query runway table
-    tQuery = "SELECT * FROM cycle2403.runway \
-              WHERE Airport_Identifier='%s'" % tIcao
     cur.execute( tQuery)
     allRows = cur.fetchall()
   if ( cur.rowcount > 0 ) :
     # Each Rway in Icao:
     for aRow in allRows :
-      rwayIcao = ''
       rwayIcao = aRow[3]
       rwayRWnn   = aRow[6]
       # Every Rwy gets a single entry in threshold.xml
@@ -258,7 +260,8 @@ def mill_rwys(tIcao):
               locsRWnn = lRow[9]
               if ( locsRWnn == rwayRWnn ) :
                 if ( locsPropOpen < 1 ) :
-                  locsProp = etree.Element("PropertyList")
+                  if not sameIcao :
+                    locsProp = etree.Element("PropertyList")
                   locsPropOpen = 1
                 locsRway = etree.SubElement(locsProp, "runway")
                 locsRwayOpen = 1
@@ -299,7 +302,8 @@ def mill_rwys(tIcao):
                     locsRWnn = lRow[9]
                     if ( locsRWnn == rcipRWnn ) :
                       if ( locsPropOpen < 1 ) :
-                        locsProp = etree.Element("PropertyList")
+                        if not sameIcao :
+                          locsProp = etree.Element("PropertyList")
                         locsPropOpen = 1
                       if ( locsRwayOpen < 1 ) :
                         locsRway = etree.SubElement(locsProp, "runway")
@@ -319,7 +323,8 @@ def mill_rwys(tIcao):
             print( '</runway>')
   ## Ensure given Icao was found in cifs
   if ( not (rwayIcao == '' )) :
-    thldTree = etree.ElementTree(xThlds)
+    if not sameIcao :
+      thldTree = etree.ElementTree(xThlds)
     #if ( verbose > 0 ) :
       #print( etree.tostring( thldTree, pretty_print=True ))
     #
@@ -333,10 +338,10 @@ def mill_rwys(tIcao):
       #
       if ( not ( os.path.isdir( fldrPath ))) :
          os.makedirs( fldrPath )
-      thldXmlFid = ("%s/%s.threshold.xml" % (fldrPath, rwayIcao))
+      thldXmlFid = ("%s/%s.threshold.xml" % (fldrPath, tIcao))
     else:
-      thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, rwayIcao))
-    #print(thrsXmlFid)
+      thldXmlFid = ("%s/%s.threshold.xml" % (outpDirp, tIcao))
+    #
     with open(thldXmlFid, "wb") as thldFile:
       thldTree.write(thldFile, pretty_print=True, xml_declaration=True, encoding="ISO-8859-1")
       thldFile.close()
@@ -344,11 +349,11 @@ def mill_rwys(tIcao):
     if ( locsPropOpen > 0 ) :
       if ( fldrTree > 0 ) :
         if (( len(rwayIcao) == 4)) :
-          locsXmlFid = ("%s/%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], rwayIcao))
+          locsXmlFid = ("%s/%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1], rwayIcao[2], tIcao))
         else :
-          locsXmlFid = ("%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],                 rwayIcao))
+          locsXmlFid = ("%s/%s/%s/%s.ils.xml" % (outpDirp, rwayIcao[0], rwayIcao[1],                 tIcao))
       else:
-        locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, rwayIcao))
+        locsXmlFid = ("%s/%s.ils.xml" % (outpDirp, tIcao))
       locsTree = etree.ElementTree(locsProp)
       #if ( verbose > 0 ) :
         #print( etree.tostring( locsProp, pretty_print=True ))
@@ -382,13 +387,12 @@ if __name__ == '__main__':
     print("   -c --cifsAll Create output for complete CIFS database: All airports")
     print("          Caution: will create subdirs, 6,000+ files: 25MBy+ flat file, 50MBy+ tree ")
     print("   -h --help    Print this help")
-    print("   -m --multiPass Create multiple entries from spec file ")
-    print("          use default specList.txt or -s to specify ")
-    print("   -o --outpPath [somePath ]  Specify Pathname for output ( no TrailSlash, noFileId ) ")
+    print("   -o --outPath [somePath ]  Specify Pathname for output ( no TrailSlash, noFileId ) ")
     print("          e.g    %s -a KATL -o ~/Airports " %  mName   )
     print("          NavData/nav/addin-nav.dat folder is created alongside this folder                                                          ")
-    print("   -s --specfile [PAth/FileID] List of Airport ICAO names for processing ")
-    print("          INFO: message is output for airport has not a single entry in database ")
+    print("   -s --specfile [PAth/FileID] List of Airport ICAO [.. Loc Id] names for processing ")
+    print("          If list contains 'ICAO '      then create all Runways entries")
+    print("          If list contains 'ICAO LocId' then create entries for specified Loc")
     print("   -t --tree  Use a pre-created folder tree , like terrasync/Airports ")
     print("          (Hint To create an empty tree: copy terrasync/Airports entirely,  ")
     print("            and then, with care, use rsync -r --remove-source-files newTree ./dump ")
@@ -412,7 +416,7 @@ if __name__ == '__main__':
     except (Exception, psycopg2.DatabaseError) as error:
       print(error)
     # nav.dat needs header and footer; NavData is placed next to Airports folder
-    nvdbPFId = ( outpDirp + '/NavData/nav/addins-nav.dat' )
+    nvdbPFId = ( outpDirp + '/addins-nav.dat' )
     nvdbHndl = open( nvdbPFId, 'a' )
     #
     if (cifsAll > 0 ) :
@@ -426,30 +430,34 @@ if __name__ == '__main__':
         cIcao = aRow[3]
         print (cIcao)
         get_magnVari(str(cIcao))
-        mill_rwys(str(cIcao))
+        millRwys(str(cIcao), '')
     else:
-      if (multiPass > 0 ) :
-        # Run through spec file for multiple airports
-        with open(specPFid, 'r') as listFile:
-          for listLine in listFile:
-            ### Using fgLogErrs.txt error logout:
-            ##if ( '/runway:' in listLine ) :
-              ##linePosn  = listLine.find ('/runway:')
-              ##restLine  = listLine[ (linePosn + 8):]
-              ##spacePosn = restLine.find( ' ')
-              ##listIcao  = restLine[0:spacePosn]
-              ## print (listIcao)
-              ##get_magnVari(listIcao)
-              ##mill_rwys(listIcao)
-            ## Using listIcao.txt : List of plain Icao entries
-            listIcao = listLine.rstrip()
-            print(listIcao)
-            get_magnVari(listIcao)
-            mill_rwys(listIcao)
+      if not ( specPFId == '' ) :
+        # Run through spec file for each entry Icao [LocId] entry
+        prevIcao = ''
+        with open(specPFId, 'r') as specHndl:
+          for specLine in specHndl:
+            specList = specLine.split()
+            specIcao = specList[0]
+            # Determine if output file is to be new fileid
+            if ( specIcao == prevIcao ) :
+              sameIcao = 1
+            else :
+              sameIcao = 0
+              prevIcao = specIcao
+              #  
+              if ( len(specList) > 1 ) :
+                specLocId = specList[1]
+              else :
+                specLocId = ''
+              print(specIcao)
+              get_magnVari(specIcao)
+              millRwys(specIcao, '', sameIcao)
+        specHndl.close()    
       else :
         # Single query
-        print(Icao)
-        get_magnVari(Icao)
-        mill_rwys(Icao)
+        print(argsIcao)
+        get_magnVari(argsIcao)
+        millRwys(argsIcao, '')
     nvdbHndl.close()
 ### End

@@ -2,7 +2,7 @@
 import psycopg2, getopt, sys
 from config import load_config
 
-global compAll, verbose, a424Icao, wantHelp
+global compAll, verbose, a424Icao, wantHelp, specFile
 
 # fallback values
 a424Icao  = 'KATL'
@@ -14,17 +14,18 @@ x810Schem = 'cyclexp810'
 #
 navdFlag  = 0
 compAll  = 1
-compType = 'loc'
 wantHelp = 0
 logfFlag = 1
+specFlag = 1
+specFile = 'locsSpec.txt'
 verbose  = 0
 #
 def normArgs(argv) :
-  global compAll, compType, verbose, a424Icao, wantHelp, navdFlag
+  global compAll, verbose, a424Icao, wantHelp, navdFlag, specFile
   # get args
   try:
-    opts, args = getopt.getopt(argv, "a:hlnt:v", \
-      ["airport=", "help", "logf",  "type=", "verbose" ] )
+    opts, args = getopt.getopt(argv, "a:hlns:s:v", \
+      ["airport=", "help", "logf", "specFile=", "verbose" ] )
   except getopt.GetoptError:
      print ('sorry, args do not make sense ')
      sys.exit(2)
@@ -39,8 +40,9 @@ def normArgs(argv) :
       logfFlag = 1
     if   opt in ("-n", "--navd"):
       navdFlag  = 1
-    if   opt in ("-t", "--type"):
-      compType = arg
+    if   opt in ("-s", "--specFile"):
+      specFlAG = 1
+      specFile = arg
     if   opt in ("-v", "--verbose"):
       verbose = 1
   #
@@ -265,6 +267,8 @@ def compGS(a424Row, aNavId ) :
               print ("%s GS Mismatch %s " % (aNavId, logfLine))
             if logfFlag :
               logfHndl.write("%s\n" % logfLine)
+            if specFlag :
+              specHndl.write("%s %s\n" % (a424Icao, a424Loci))
             aGSToNavd( a424Row, addnHndl)
   except (Exception, psycopg2.DatabaseError) as error:
     print(error)
@@ -280,7 +284,7 @@ def compLocs(tIcao):
   x810Table   = 'localizer'
   a424_schTbl  = "%s.%s" %  (a424Schem, a424Table)
   x810_schTbl  = "%s.%s" %  (x810Schem, x810Table)
-  aItemName   = 'airport_Identifier'
+  aItemName   = 'Airport_Identifier'
   xItemName   = 'Airport_Identifier'
   a424Row = ''
   if ( tIcao == 'All') : 
@@ -385,6 +389,8 @@ def compLocs(tIcao):
                           print ("%s LOC Mismatch %s " % (a424Loci, logfLine))
                         if logfFlag :
                           logfHndl.write("%s\n" % logfLine)
+                        if specFlag :
+                          specHndl.write("%s %s\n" % (a424Icao, a424Loci))
                         aLocToNavd ( a424Row, addnHndl)
                     #
                     if not (a424Row[13] == '' ) :
@@ -418,19 +424,15 @@ def showHelp() :
   print("   -a --airport=  Compare arinc vs x810 localizers for single airport ICAO ")
   print("   -l --logf Append output for single id, rewrite output to xxx-logf.txt ")
   print("   -n --navd Append output for single id, rewrite output to xxx-nav.dat ")
-  print("   -t --type Specify 'loc or 'vhf' (default) for navdb table and 'xxx-' output ")
+  print("   -s --specFile Create 'ICAO LocId' entries in specFile for genAirpBXmls.py  ")
   print("   -v --verbose Log progress to console ")
   print("  ")
   print(" Example calls:")
-  print("   for Single NDB Id:  %s -i AMF -t n " %  progName)
   print("   for Single VHF Id:  %s -i BRW -t v " %  progName)
-  print("   for All    NDB   :  %s        -t n " %  progName)
   print("   for All    VHF Id:  %s        -t v " %  progName)
   print("  ")
-  print(" Default:  Compare all vhf types  ")
-  print("  ")
-  print("Hint: To sort xxx-nav.dat into adds-nav.dat :   ")
-  print("  cat xxx-nav.dat  | sort -k1,1r -k9,9  > vhf-adds-nav.dat  ")
+  print("Hint: To sort xxx-nav.dat into nav-sort.dat :   ")
+  print("  cat xxx-nav.dat  | sort -k1,1r -k9,9  > nav-sort.dat  ")
   print("  ")
   print("  ")
 #
@@ -455,10 +457,14 @@ if __name__ == '__main__':
       logfHndl  = open( logfPFId, 'a' )
     if (navdFlag > 0 ) :
       addnHndl  = open( addnPFId, 'a' )
+    if (specFlag > 0 ) :
+      specHndl  = open( specFile, 'w' )
     compLocs(a424Icao)
     #
     if (logfFlag > 0 ) :
       logfHndl.close()
     if (navdFlag > 0 ) :
       addnHndl.close()
+    if (specFlag > 0 ) :
+      specHndl.close()
   #
