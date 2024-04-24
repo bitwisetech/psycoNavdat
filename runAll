@@ -12,5 +12,6 @@ cat vhf-nav.dat    | sort -k 1,1r -k9,9 > vhfs-nav.dat
 cat vhf-logf.txt   | sort -k 1,1 -k9,9  > vhfs-logf.txt
 cat ndb-nav.dat    | sort -k 1,1  -k9,9 > ndbs-nav.dat
 cat ndb-logf.txt   | sort -k 1,1  -k9,9 > ndbs-logf.txt
+./genAirpXmls.py  -s /comm/fpln/navadds/locs-spec.txt  -o /comm/fpln/navadds/Airports -t
 
 

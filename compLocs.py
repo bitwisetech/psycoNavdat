@@ -81,13 +81,13 @@ def mtr2ft ( tStr):
     tDeci  = (int(tStr) / ( 12 * 0.0254))
     return ( tDeci)
 
-def magnHdng( tStr, magnDecl):
+def magnHdng( tStr, magnVari):
   Hdng = float(tStr[0:4]) / 10.0
   if  ( len(tStr) < 5 ):
     return(tHdng)
   else:
     if (tStr[4] == 'T' ) :
-      mHdng = (Hdng - magnDecl)
+      mHdng = (Hdng - magnVari)
       while ( mHdng < 0 ) :
         mHdng += 360
       return (mHdng)
@@ -103,7 +103,7 @@ def trueHdng( tStr, magnVari):
     tHdng += 360  
   return(tHdng)
 
-def magnDecl( tStr) :
+def get_magnDecl( tStr) :
   tDecl = float(tStr[1:]) / 10.0
   if ( tStr[0] == 'W' ):
     tDecl *= -1
@@ -123,7 +123,7 @@ def aLocToNavd ( LTN_aRow, navdatHndl) :
       navdElev = ( "%6i"  % int(LTN_aRow[21])).rjust( 6, ' ')
     else :
       navdElev = '     0'
-    navdDecl = magnDecl(LTN_aRow[20])
+    navdDecl = get_magnDecl(LTN_aRow[20])
     trueBrng = trueHdng( LTN_aRow[12],  navdDecl )
     navdBngT = ( "%07.3f" % trueBrng).rjust(11)
     navdFreq = (LTN_aRow[8][0:5]).rjust( 5, ' ')
@@ -183,7 +183,7 @@ def aGSToNavd ( GTN_aRow, navdatHndl) :
     navdFreq = (GTN_aRow[8][0:5]).rjust( 5, ' ')
     navdRnge = ' 10'
     navdAngl = GTN_aRow[19].rjust( 3, ' ')
-    navdDecl = magnDecl(GTN_aRow[20])
+    navdDecl = get_magnDecl(GTN_aRow[20])
     trueBrng = trueHdng( GTN_aRow[12],  navdDecl )
     navdBngT = ( "%07.3f" % trueBrng).rjust(7)
     navdIden = GTN_aRow[5].ljust( 4, ' ')
@@ -370,6 +370,7 @@ def compLocs(tIcao):
                     x810Lati = float(x810Row[1])
                     x810Long = float(x810Row[2])
                     x810Freq =      ( x810Row[4])
+                    x810Rway =      ( x810Row[9])
                     diffLati = abs(x810Lati - a424Lati)
                     diffLong = abs(x810Long - a424Long)
                     if (verbose > 0) :
@@ -378,7 +379,7 @@ def compLocs(tIcao):
                       print ( "\nlat diff: %f  lon diff: %f" % \
                       ( diffLati, diffLong))
                     #
-                    if ( (x810Freq == a424Freq) \
+                    if ( (x810Freq == a424Freq) and (x810Rway == a424Rway[2:]) \
                     and (diffLati < 0.0001) and (diffLong < 0.0001) ) :
                       if (verbose > 0) :
                         print ("%s LOC Matches OK " % a424Loci)
@@ -391,6 +392,10 @@ def compLocs(tIcao):
                         mismatch = 1
                         logfLine = ( "%s aFreq: %s  xFreq: %s " % \
                         (logfLine, a424Freq, x810Freq ))
+                      if not (x810Rway == a424Rway[2:]) :
+                        mismatch = 1
+                        logfLine = ( "%s aRway: %s  xRway: %s " % \
+                        (logfLine, a424Rway, x810Rway ))
                       if ( mismatch > 0 ) :
                         print ("%s " % (a424Icao))
                         if (verbose > 0) :

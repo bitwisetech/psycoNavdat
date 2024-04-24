@@ -74,13 +74,13 @@ def mtr2ft ( tStr):
     tDeci  = (int(tStr) / ( 12 * 0.0254))
     return ( tDeci)
 
-def magnHdng( tStr, magnDecl):
+def magnHdng( tStr, magnVari):
   Hdng = float(tStr[0:4]) / 10.0
   if  ( len(tStr) < 5 ):
-    return(tHdng)
+    return(Hdng)
   else:
     if (tStr[4] == 'T' ) :
-      mHdng = (Hdng - magnDecl)
+      mHdng = (Hdng - magnVari)
       while ( mHdng < 0 ) :
         mHdng += 360
       return (mHdng)
@@ -96,13 +96,13 @@ def trueHdng( tStr, magnVari):
     tHdng += 360  
   return(tHdng)
 
-def magnDecl( tStr) :
+def get_magnDecl( tStr) :
   tDecl = float(tStr[1:]) / 10.0
   if ( tStr[0] == 'W' ):
     tDecl *= -1
   return(tDecl)
 
-def get_magnVari( tIcao) :
+def get_airpDecl( tIcao) :
   global argsIcao, magnVari, outpDirp
   with dbConn.cursor() as cur:
     # query airport table for Mag Variation
@@ -116,7 +116,7 @@ def get_magnVari( tIcao) :
         print('Query: ', tQuery)
     else :
       tMagVar = float(row[14][1:]) / 10.0
-      if ( row[14][0] != 'W' ):
+      if ( row[14][0] == 'W' ):
         tMagVar *= -1
       magnVari = tMagVar
 
@@ -124,11 +124,7 @@ def parseRway ( tRow) :
   global argsIcao, magnVari, outpDirp, nvdbHndl, thrsElvM, sameIcao
   global locsProp, xThlds, xRway, xThrs, xIden, xHdng, xLati, xLong, xDisp, xStop
   tIden = tRow[6][2: ]
-  mHdng = tRow[9]
-  if (mHdng == '') :
-    tHdng = ''
-  else:
-    tHdng = trueHdng( mHdng, magnVari)
+  tHdng = trueHdng(tRow[9], magnVari)
   tLati = tRow[10]
   dLati = deciLati( tLati)
   tLong = tRow[11]
@@ -147,7 +143,7 @@ def parseRway ( tRow) :
   xIden = etree.SubElement( xThrs, "rwy")
   xIden.text = str( tIden )
   xHdng = etree.SubElement( xThrs, "hdg-deg")
-  if (tHdng == '') :
+  if (tHdng == 999) :
     xHdng.text = ''
   else :
     xHdng.text = str("%3.2f" %  tHdng )
@@ -161,12 +157,13 @@ def parseRway ( tRow) :
 
 def parseLocs ( tRow, xRway) :
   global locsProp, xThlds, argsIcao, magnVari, outpDirp, thrsElvM, sameIcao
-  locsRwy    = tRow[9][2:]
-  locsNvId   = tRow[5]
-  locsHdgT   = trueHdng( tRow[12], magnVari)
-  locsLat    = deciLati( tRow[10])
-  locsLon    = deciLong( tRow[11])
-  locsElev   = thrsElvM
+  locsRwy  = tRow[9][2:]
+  locsNvId = tRow[5]
+  locsVari = get_magnDecl(tRow[20])
+  locsHdgT = trueHdng(tRow[12], locsVari)
+  locsLat  = deciLati( tRow[10])
+  locsLon  = deciLong( tRow[11])
+  locsElev = thrsElvM
   if ( verbose > 0 ) :
     print ('\n pLocs Rwy:', locsRwy, ' ID:', locsNvId, )
   # Add fields to passed xml Runway
@@ -422,7 +419,7 @@ if __name__ == '__main__':
       print(error)
     # nav.dat needs header and footer; NavData is placed next to Airports folder
     nvdbPFId = ( outpDirp + '/addins-nav.dat' )
-    nvdbHndl = open( nvdbPFId, 'a' )
+    nvdbHndl = open( nvdbPFId, 'w' )
     #
     if (cifsAll > 0 ) :
       with dbConn.cursor() as cur:
@@ -434,7 +431,7 @@ if __name__ == '__main__':
       for aRow in allRows :
         cIcao = aRow[3]
         print (cIcao)
-        get_magnVari(str(cIcao))
+        get_airpDecl(str(cIcao))
         millRwys(str(cIcao), '')
     else:
       if not ( specPFId == '' ) :
@@ -456,13 +453,13 @@ if __name__ == '__main__':
               else :
                 specLocId = ''
               print(specIcao)
-              get_magnVari(specIcao)
+              get_airpDecl(specIcao)
               millRwys(specIcao, '', sameIcao)
         specHndl.close()
       else :
         # Single query
         print(argsIcao)
-        get_magnVari(argsIcao)
+        get_airpDecl(argsIcao)
         millRwys(argsIcao, '')
     nvdbHndl.close()
 ### End
